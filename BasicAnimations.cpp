@@ -3,13 +3,13 @@
 #include "ColorPalette.h"
 #include "ColorPairPalette.h"
 #include "ColorSets.h"
-#include "RemoteAnimationController.h"
+#include "AnimationWebServer.h"
 
 #define WHILE_ANIMATION_LOOP ;\
-	while(RemoteAnimationController::shouldCurrentAnimationContinue())
+	while(AnimationWebServer::shouldCurrentAnimationContinue())
 
 #define DELAY_OR_RETURN(delayMS)\
-	if(RemoteAnimationController::delayUnlessInterrupted((delayMS)))\
+	if(AnimationWebServer::delayUnlessInterrupted((delayMS)))\
 	{\
 		debug("Early exit");\
 		return;\
@@ -41,7 +41,6 @@ void colorMarch(ColorPalette& palette, const int bandSize)
 // Animation that has two colors moving together in one direction, with one color then the next with them lerped together
 void mixedWaveAnimation(Color color1, Color color2)
 {
-	int cycleOffset = 0;
 	const int WAVE_LENGTH = 30;
 	int cyclePosition = 0;
 
@@ -64,7 +63,6 @@ void mixedWaveAnimation(Color color1, Color color2)
 
 void colorThrob(ColorPalette& colorGenerator)
 {
-	int cycleOffset = 0;
 	const int TRANSITION_TICKS = 100;
 	Color color1 = colorGenerator.getNextRandomColor();
 	Color color2 = colorGenerator.getNextRandomColor();

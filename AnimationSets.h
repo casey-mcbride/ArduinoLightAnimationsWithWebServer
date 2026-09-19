@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Configuration.h"
 #include "FastLED.h"
 #include "ColorUtils.h"
 #include "BasicAnimations.h"
 #include "LedClusterAnimations.h"
 #include "Basic.h"
-#include "RemoteAnimationController.h"
+#include "AnimationWebServer.h"
 #include "ColorSets.h"
 
 #ifdef INCLUDE_RAINBOW_ANIMATIONS

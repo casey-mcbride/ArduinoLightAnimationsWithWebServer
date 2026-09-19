@@ -7,7 +7,7 @@ const byte BYTE_MAX = 255;
 const byte BYTE_MIN = 0;
 
 #ifdef DEBUG
-	#define assert(flag, message)\
+	#define assertPrint(flag, message)\
 		if(!(flag)) \
 		{\
 			delay(1000);\
@@ -43,7 +43,7 @@ const byte BYTE_MIN = 0;
 
 
 #else
-	#define assert(flag, message)
+	#define assertPrint(flag, message)
 	#define debug(message)
 	#define debugValue(header, value)
 	#define debugValueIf(flag, header, value)
@@ -60,7 +60,11 @@ void initDebugIO();
 template<typename numeric>
 numeric clamp(numeric value,numeric minValue, numeric maxValue)
 {
-	value = max(min(value, maxValue), minValue);
+	if(value < minValue)
+		return minValue;
+	else if(value > maxValue)
+		return maxValue;
+	else
 		return value;
 }
 

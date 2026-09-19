@@ -18,7 +18,7 @@ void setLed( int index, Color color)
 	if(isLedDirectionSwapped)
 		index = NUM_LEDS - (index + 1);
 
-	assert(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
+	assertPrint(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
 	index = clamp(index, 0, NUM_LEDS - 1);
 	leds[index] = color;
 }
@@ -28,7 +28,7 @@ Color getLed(int index)
 	if(isLedDirectionSwapped)
 		index = NUM_LEDS - (index + 1);
 
-	assert(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
+	assertPrint(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
 	index = clamp(index, 0, NUM_LEDS - 1);
 	return leds[index];
 }

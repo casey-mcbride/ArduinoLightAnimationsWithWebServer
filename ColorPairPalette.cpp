@@ -1,6 +1,6 @@
 #include "ColorPairPalette.h"
 
-ColorPairPalette::ColorPairPalette(Color* colorPairs, int numColorPairs)
+ColorPairPalette::ColorPairPalette(const Color* colorPairs, int numColorPairs)
 {
 	this->colorPairs = colorPairs;
 	this->numColorPairs = numColorPairs;

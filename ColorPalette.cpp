@@ -1,6 +1,6 @@
 #include "ColorPalette.h"
 
-ColorPalette::ColorPalette(Color* colors, int numColors)
+ColorPalette::ColorPalette(const Color* colors, int numColors)
 {
 	this->colors = colors;
 	this->numColors = numColors;
@@ -14,7 +14,7 @@ int ColorPalette::getNumColors()
 
 Color ColorPalette::getColor(int colorIndex) const
 {
-	assert(colorIndex >= 0 && colorIndex < numColors, "Color index out of bounds");
+	assertPrint(colorIndex >= 0 && colorIndex < numColors, "Color index out of bounds");
 	return colors[colorIndex];
 }
 

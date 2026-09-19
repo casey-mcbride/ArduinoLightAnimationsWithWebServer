@@ -66,7 +66,7 @@
 
 // 	void startWarmup()
 // 	{
-// 		assert(startWarmupColors == nullptr, "These should've been cleaned up");
+// 		assertPrint(startWarmupColors == nullptr, "These should've been cleaned up");
 
 // 		startWarmupColors = new Color[ledCount];
 // 		for(int ledIndex = 0; ledIndex < ledCount; ledIndex++)
@@ -158,11 +158,11 @@
 // 		switch(this->currentAnimationKey)
 // 		{
 // 			case AnimationKey::Rainbow:
-// 				assert(isBlack(getLed(48)), "Should be");
+// 				assertPrint(isBlack(getLed(48)), "Should be");
 // 				initializeRainbowAnimation();
 // 				break;
 // 			default:
-// 				assert(false, "Unhandled animation")
+// 				assertPrint(false, "Unhandled animation")
 // 				break;
 // 		}
 
@@ -177,7 +177,7 @@
 // 				tickRainbowAnimation();
 // 				break;
 // 			default:
-// 				assert(false, "Unhandled animation")
+// 				assertPrint(false, "Unhandled animation")
 // 				break;
 // 		}
 // 	}

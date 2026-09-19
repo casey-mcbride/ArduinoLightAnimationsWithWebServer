@@ -1,29 +1,32 @@
 // #include "LedClusterAnimations.h"
-#include "RemoteAnimationController.h"
+#include "AnimationWebServer.h"
 #include "Configuration.h"
 #include "Basic.h"
+
+#include "BasicAnimations.h"
+//#include "AnimationSets.h"
 // #include "ColorUtils.h"
-// #include "IRremote.hpp"
 // #include "BasicAnimations.h"
 // #include "ColorUtils.h"
 
 // typedef void* (int) AnimationFunction;
-
-// #define LED_DATA_PIN 6
-#define MAX_BRIGHTNESS 100
 // typedef void* (int) AnimationFunction;
 
 void setup()
 {
+	initFastLeds();
 	initDebugIO();
 
 	// If nothing in 0, noise produces a semi-random number
 	randomSeed(analogRead(0));
-	RemoteAnimationController::startRecieving(IR_RECIEVER_DATA_PIN);
+
+	//AnimationWebServer::startServer();
 }
 
 void loop()
 {
-	RemoteAnimationController::startAnimationLoop();
-	// RemoteAnimationController::testIRReceiverLoop();
+	//christmasWhiteAndBlueMixedWave();
+	mixedWaveAnimation(ROYAL_BLUE, WHITE);
+		//randomBrightSpots(CHRISTMAS_COLOR_PALETTE, 10);
+	//AnimationWebServer::startAnimationLoop();
 }
