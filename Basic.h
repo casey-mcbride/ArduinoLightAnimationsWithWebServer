@@ -14,7 +14,7 @@ const byte BYTE_MIN = 0;
 			Serial.println((message));\
 		}
 
-	#define debug(message)\
+	#define debugMessage(message)\
 		Serial.println((message));
 
 	#define debugValue(header, value)\
@@ -44,7 +44,7 @@ const byte BYTE_MIN = 0;
 
 #else
 	#define assertPrint(flag, message)
-	#define debug(message)
+	#define debugMessage(message)
 	#define debugValue(header, value)
 	#define debugValueIf(flag, header, value)
 	#define debugRaw(value) debugValue(#value, value);

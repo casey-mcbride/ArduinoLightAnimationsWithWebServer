@@ -2,13 +2,15 @@
 
 void initDebugIO()
 {
-	#ifdef DEBUG
+#ifdef DEBUG
 	// Start io
 	Serial.begin(9600);
 
-	pinMode(LED_BUILTIN, OUTPUT);
-	debug("IO initialized");
-	#endif
+	// HACK: If it's not delayed, it won't print for a little bit, don't know why
+	delay(200);
+
+	debugMessage("IO initialized");
+#endif
 }
 
 int getNextRandomExclusive(int start, int exclusiveMax)

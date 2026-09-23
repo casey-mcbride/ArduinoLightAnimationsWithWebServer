@@ -1,6 +1,6 @@
 #include "ColorUtils.h"
 
-static Color leds[NUM_LEDS];
+static Color leds[NUM_STRAND_LEDS];
 static bool isLedDirectionSwapped = false;
 
 void toggleLedDirection()
@@ -10,26 +10,26 @@ void toggleLedDirection()
 
 void initFastLeds()
 {
-	FastLED.addLeds<WS2811, LED_DATA_PIN, RGB>(leds, NUM_LEDS);
+	FastLED.addLeds<WS2811, LED_DATA_PIN, RGB>(leds, NUM_STRAND_LEDS);
 }
 
 void setLed( int index, Color color)
 {
 	if(isLedDirectionSwapped)
-		index = NUM_LEDS - (index + 1);
+		index = NUM_STRAND_LEDS - (index + 1);
 
-	assertPrint(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
-	index = clamp(index, 0, NUM_LEDS - 1);
+	assertPrint(index >= 0 && index < NUM_STRAND_LEDS, "LED index out of bounds");
+	index = clamp(index, 0, NUM_STRAND_LEDS - 1);
 	leds[index] = color;
 }
 
 Color getLed(int index)
 {
 	if(isLedDirectionSwapped)
-		index = NUM_LEDS - (index + 1);
+		index = NUM_STRAND_LEDS - (index + 1);
 
-	assertPrint(index >= 0 && index < NUM_LEDS, "LED index out of bounds");
-	index = clamp(index, 0, NUM_LEDS - 1);
+	assertPrint(index >= 0 && index < NUM_STRAND_LEDS, "LED index out of bounds");
+	index = clamp(index, 0, NUM_STRAND_LEDS - 1);
 	return leds[index];
 }
 

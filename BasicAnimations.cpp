@@ -11,7 +11,7 @@
 #define DELAY_OR_RETURN(delayMS)\
 	if(AnimationWebServer::delayUnlessInterrupted((delayMS)))\
 	{\
-		debug("Early exit");\
+		debugMessage("Early exit");\
 		return;\
 	}
 
@@ -26,7 +26,7 @@ void colorMarch(ColorPalette& palette, const int bandSize)
 
 	WHILE_ANIMATION_LOOP
 	{
-		for(int i = 0; i < NUM_LEDS; i++)
+		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
 			Color c = palette.getColor(((i + cycleOffset) / bandSize) % numColors);
 			setLed(i, c);
@@ -46,7 +46,7 @@ void mixedWaveAnimation(Color color1, Color color2)
 
 	WHILE_ANIMATION_LOOP
 	{
-		for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+		for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 		{
 			int localPosition = (ledIndex + cyclePosition) % WAVE_LENGTH;
 			int distanceFromPeak = abs(localPosition - WAVE_LENGTH / 2);
@@ -71,7 +71,7 @@ void colorThrob(ColorPalette& colorGenerator)
 	{
 		for(int cyclePosition = 0; cyclePosition <= TRANSITION_TICKS; cyclePosition++)
 		{
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				int distanceFromPeak = TRANSITION_TICKS - cyclePosition;
 				float lerpValue = (float)distanceFromPeak / TRANSITION_TICKS;
@@ -91,7 +91,7 @@ void colorThrob(ColorPalette& colorGenerator)
 // The color starts dim, gets bright, gets dim again
 void colorHillAnimation(ColorPalette& colorGenerator)
 {
-	const byte trailLength = NUM_LEDS;
+	const byte trailLength = NUM_STRAND_LEDS;
 	const int BUFFER = 10;
 	const int trailDistance = trailLength * 2 + BUFFER;
 
@@ -100,7 +100,7 @@ void colorHillAnimation(ColorPalette& colorGenerator)
 		Color color = colorGenerator.getNextRandomColor();
 		for(int spotPosition = 0 - trailLength; spotPosition < trailDistance; spotPosition++)
 		{
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				// Glow things based on distance from the spot
 				int distance = abs(spotPosition - ledIndex);
@@ -115,11 +115,11 @@ void colorHillAnimation(ColorPalette& colorGenerator)
 		color = colorGenerator.getNextRandomColor();
 		for(int spotPosition = 0 - trailLength; spotPosition < trailDistance; spotPosition++)
 		{
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				// Glow things based on distance from the spot
 				int distance = abs(spotPosition - ledIndex);
-				setLed(NUM_LEDS - ledIndex - 1, colorLerp((float)distance / trailLength, color, Color::Black));
+				setLed(NUM_STRAND_LEDS - ledIndex - 1, colorLerp((float)distance / trailLength, color, Color::Black));
 
 			}
 
@@ -133,15 +133,15 @@ void colorHillAnimation(ColorPalette& colorGenerator)
 // The color starts bright, then gets dim near the tailend
 void colorBeamAnimation(ColorPalette& palette)
 {
-	const byte trailLength = NUM_LEDS;
+	const byte trailLength = NUM_STRAND_LEDS;
 	const byte buffer = 10;
 
 	WHILE_ANIMATION_LOOP
 	{
 		Color currentColor = palette.getNextRandomColor();
-		for(int spotPosition = 0; spotPosition < NUM_LEDS + trailLength + buffer; spotPosition++)
+		for(int spotPosition = 0; spotPosition < NUM_STRAND_LEDS + trailLength + buffer; spotPosition++)
 		{
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				if(ledIndex > spotPosition)
 				{
@@ -160,18 +160,18 @@ void colorBeamAnimation(ColorPalette& palette)
 
 		// GO back the other way
 		currentColor = palette.getNextRandomColor();
-		for(int spotPosition = 0; spotPosition < NUM_LEDS + trailLength + buffer; spotPosition++)
+		for(int spotPosition = 0; spotPosition < NUM_STRAND_LEDS + trailLength + buffer; spotPosition++)
 		{
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				if(ledIndex > spotPosition)
 				{
-					setLed(NUM_LEDS - ledIndex - 1, Color::Black);
+					setLed(NUM_STRAND_LEDS - ledIndex - 1, Color::Black);
 				}
 				else
 				{
 					float lerpValue =  clamp((spotPosition - ledIndex) / (float)trailLength, 0.0f, 1.0f);
-					setLed(NUM_LEDS - ledIndex - 1, colorLerp(lerpValue, currentColor, Color::Black));
+					setLed(NUM_STRAND_LEDS - ledIndex - 1, colorLerp(lerpValue, currentColor, Color::Black));
 				}
 			}
 
@@ -184,9 +184,9 @@ void colorBeamAnimation(ColorPalette& palette)
 // Two colors come from both sides and pass through eachother
 void colorBeamCollisionAnimation(ColorPairPalette& colorPalette)
 {
-	const byte trailLength = NUM_LEDS;
+	const byte trailLength = NUM_STRAND_LEDS;
 	const byte buffer = 10;
-	const int animationDistance = NUM_LEDS + trailLength + buffer;
+	const int animationDistance = NUM_STRAND_LEDS + trailLength + buffer;
 
 	WHILE_ANIMATION_LOOP
 	{
@@ -197,9 +197,9 @@ void colorBeamCollisionAnimation(ColorPairPalette& colorPalette)
 
 		for(int spotPosition = 0; spotPosition < animationDistance; spotPosition++)
 		{
-			int reverseSpotPosition = NUM_LEDS - spotPosition;
+			int reverseSpotPosition = NUM_STRAND_LEDS - spotPosition;
 
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				float lerpValue1;
 				float lerpValue2;
@@ -231,7 +231,7 @@ void randomBrightSpots(ColorPalette& generator, int fadeTicks)
 	const int COLOR_CHANCE = 25;
 	WHILE_ANIMATION_LOOP
 	{
-		for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+		for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 		{
 			Color current = getLed(ledIndex);
 			current = dimColor(current, fadeTicks);
@@ -255,14 +255,14 @@ void lineSwap(ColorPalette& colorGenerator)
 	const int WINDOW_SIZE = 50;
 	const int LINE_SWAP_DELAY = 70;
 	Color current = Color::Black;
-	for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+	for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 	{
 		setLed(ledIndex, current);
 	}
 	FastLED.show();
 	bool goingRight = true;
 
-	const int SPOT_RANGE = NUM_LEDS + WINDOW_SIZE;
+	const int SPOT_RANGE = NUM_STRAND_LEDS + WINDOW_SIZE;
 
 	WHILE_ANIMATION_LOOP
 	{
@@ -271,7 +271,7 @@ void lineSwap(ColorPalette& colorGenerator)
 		{
 			for(int spotPosition = 0; spotPosition < SPOT_RANGE; spotPosition++)
 			{
-				for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+				for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 				{
 					float lerpValue;
 					if(ledIndex > spotPosition)
@@ -293,7 +293,7 @@ void lineSwap(ColorPalette& colorGenerator)
 		{
 			for(int spotPosition = SPOT_RANGE; spotPosition >= 0; spotPosition--)
 			{
-				for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+				for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 				{
 					float lerpValue;
 					if(ledIndex < spotPosition - WINDOW_SIZE)
@@ -322,8 +322,8 @@ void lineSwap(ColorPalette& colorGenerator)
 
 void firelightAnimation()
 {
-	Color fireGlowLeft[NUM_LEDS + 1];
-	Color fireGlowRight[NUM_LEDS + 1];
+	Color fireGlowLeft[NUM_STRAND_LEDS + 1];
+	Color fireGlowRight[NUM_STRAND_LEDS + 1];
 	Color dimmerRed = Color(60, 0, 0);
 	Color dimmestRed = Color(30, 0, 0);
 	Color dimmerOrange = dimColor(Color::Orange, 80);
@@ -331,7 +331,7 @@ void firelightAnimation()
 	Color fireColors[] = {Color::Red, dimmerRed, dimmestRed, dimmerOrange, Color::Orange, Color::Black, Color::Black};
 	ColorPalette palette = ColorPalette(fireColors, getStaticArraySize(fireColors));
 
-	for(int colorIndex = 0; colorIndex < NUM_LEDS + 1; colorIndex++)
+	for(int colorIndex = 0; colorIndex < NUM_STRAND_LEDS + 1; colorIndex++)
 	{
 		fireGlowLeft[colorIndex] = palette.getRandomColor(); 
 		fireGlowRight[colorIndex] = palette.getRandomColor(); 
@@ -344,7 +344,7 @@ void firelightAnimation()
 		{
 			float lerpValue = (float)lerpIndex / lerpResolution;
 
-			for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++)
+			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
 			{
 				Color leftContribution = colorLerp(lerpValue, fireGlowLeft[ledIndex], fireGlowLeft[ledIndex + 1]);
 				Color rightContribution = colorLerp(lerpValue, fireGlowRight[ledIndex], fireGlowRight[ledIndex + 1]);
@@ -358,7 +358,7 @@ void firelightAnimation()
 
 		// TODO: INstead of moving these all left, just keep track of the current index and replace it, i.e. make a circular queue
 
-		for(int i = 0; i < NUM_LEDS; i++)
+		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
 			fireGlowLeft[i] = fireGlowLeft[i + 1];
 		}

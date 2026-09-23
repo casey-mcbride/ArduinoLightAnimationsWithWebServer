@@ -4,7 +4,7 @@
 #include "Basic.h"
 
 #include "BasicAnimations.h"
-//#include "AnimationSets.h"
+#include "AnimationSets.h"
 // #include "ColorUtils.h"
 // #include "BasicAnimations.h"
 // #include "ColorUtils.h"
@@ -14,19 +14,16 @@
 
 void setup()
 {
-	initFastLeds();
 	initDebugIO();
+	initFastLeds();
 
 	// If nothing in 0, noise produces a semi-random number
 	randomSeed(analogRead(0));
 
-	//AnimationWebServer::startServer();
+	AnimationWebServer::startServer();
 }
 
 void loop()
 {
-	//christmasWhiteAndBlueMixedWave();
-	mixedWaveAnimation(ROYAL_BLUE, WHITE);
-		//randomBrightSpots(CHRISTMAS_COLOR_PALETTE, 10);
-	//AnimationWebServer::startAnimationLoop();
+	AnimationWebServer::startAnimationLoop();
 }
