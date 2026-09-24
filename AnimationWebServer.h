@@ -47,5 +47,6 @@ private:
 	static void handleScriptRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleStyleRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleLedMessage(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
+	static void handleBulbDataRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 	static void handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 };

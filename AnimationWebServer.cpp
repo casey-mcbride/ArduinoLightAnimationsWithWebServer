@@ -38,22 +38,43 @@ static int lightBrightness;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
 
+struct BulbInfo
+{
+	Color color = Color::White;
+	bool isOn = false;
+};
+BulbInfo bulbs[NUM_STRAND_LEDS];
+
+void refreshStrandFromBulbInfo()
+{
+	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
+	{
+		if(bulbs[bulbIndex].isOn)
+		{
+			setLed(bulbIndex, bulbs[bulbIndex].color);
+		}
+		else
+		{
+			setLed(bulbIndex, Color::Black);
+		}
+	}
+
+	FastLED.show();
+}
+
 void AnimationWebServer::startServer()
 {
 	server = UnoR4WiFi_WebServer(serverPort);
 	startOfCurrentAnimation = millis();
 	lightBrightness = 75;
-	// plainStrandColor = Color::White;
 	currentAnimationIndex = 0;
 
-	// Init LED matrix info
-	// matrix.begin();
-
-	// Zero out leds
-	// Serial.println("Zeroing out LEDs");
-	// for (int row = 0; row < ledMatrixHeight; row++)
-	// 	for (int column = 0; column < ledMatrixWidth; column++)
-	// 		setPixel(column, row, false);
+	// Zero out bulbs
+	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
+	{
+		bulbs[bulbIndex].isOn = false;
+		bulbs[bulbIndex].color = Color::White;
+	}
 
 	Serial.println("Arduino Uno R4 WiFi - Web Server");
 
@@ -90,6 +111,7 @@ void AnimationWebServer::startServer()
 	server.addRoute("/index.html", handleHome);
 	server.addRoute("/ledmessage.html", handleLedMessage);
 	server.addRoute("/points.html", handlePointLeds);
+	server.addRoute("/bulbInfo.json", handleBulbDataRequested);
 	
 	// Set custom 404 handler
 	server.setNotFoundHandler(handleNotFound);
@@ -269,27 +291,7 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 
 	if (method == "GET") 
 	{
-		const int maxMatrixStringSize =  sizeof("[1,") * NUM_STRAND_LEDS;
-		String innerHtml = "[[";
-		// Reserve the string for the maximum estimated size that it could take up
-		innerHtml.reserve(innerHtml.length() + maxMatrixStringSize);
-
-		// Build an array of bools
-		for (int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++) 
-		{
-			if (getLed(ledIndex) == Color::Black)
-				innerHtml += "0,";
-			else
-				innerHtml += "1,";
-		}
-		// Delete trailing comma
-		innerHtml.remove(innerHtml.length() - 1);
-		innerHtml += "]]";
-
-		String html = HTML_SET_LEDS_CONTENT;
-		html.replace("%JAVASCRIPT_MATRIX%", innerHtml);
-
-		server.sendResponse(client, html.c_str(), MIME_HTML_TYPE);
+		server.sendResponse(client, HTML_SET_LEDS_CONTENT, MIME_HTML_TYPE);
 	}
 	else if (method == "POST") 
 	{
@@ -300,14 +302,12 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 			String x = jsonData.substring(0, commaIndex);
 			String y = jsonData.substring(commaIndex + 1);
 			int row = y.toInt();
-			int column = x.toInt();
-			if(column >= 0 && column < NUM_STRAND_LEDS)
+			int bulbIndex = x.toInt();
+			if(bulbIndex >= 0 && bulbIndex < NUM_STRAND_LEDS)
 			{
-				if (getLed(column) == Color::Black)
-					setLed(column, Color::White);
-				else
-					setLed(column, Color::Black);
-				FastLED.show();
+				bulbs[bulbIndex].isOn = !bulbs[bulbIndex].isOn;
+
+				refreshStrandFromBulbInfo();
 			}
 		}
 
@@ -315,9 +315,35 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 	}
 }
 
+void AnimationWebServer::handleBulbDataRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	debugMessage("handleBulbDataRequested");
+
+	const int maxMatrixStringSize =  sizeof("[1,") * NUM_STRAND_LEDS;
+	char stringBuffer[50]; 
+	String jsonBuilder = "{\"bulbInfo\":[\n";
+	// Reserve the string for the maximum estimated size that it could take up
+	jsonBuilder.reserve(jsonBuilder.length() + maxMatrixStringSize);
+
+	// Build an array of bulbInfo json
+	for (int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++) 
+	{
+		const BulbInfo& info = bulbs[ledIndex];
+		sprintf(stringBuffer, "{\"r\": %d, \"g\": %d, \"b\": %d, \"isOn\": %s},", info.color.r, info.color.g, info.color.b, info.isOn ? "true" : "false"); 
+		jsonBuilder += stringBuffer;
+	}
+	// Delete trailing comma
+	jsonBuilder.remove(jsonBuilder.length() - 1);
+	jsonBuilder += "]}";
+
+	server.sendResponse(client, jsonBuilder.c_str(), MIME_JASON_TYPE);
+}
+
 void AnimationWebServer::handleNotFound(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
-	server.sendResponse(client, HTML_CONTENT_404);
+	server.sendResponse(client, HTML_CONTENT_404, MIME_HTML_TYPE);
 }

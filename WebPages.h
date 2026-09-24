@@ -67,7 +67,7 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 		<script>
 			function handleBodyLoad()
 			{
-				createMatrixButtons(document.getElementById("innerContent"), %JAVASCRIPT_MATRIX%);
+				createMatrixButtons(document.getElementById("innerContent"));
 			}
 		</script>
 	</body>
@@ -129,33 +129,45 @@ body
 )rawliteral";
 
 static const char SCRIPTS_JS[] PROGMEM = R"rawliteral(
-function createMatrixButtons(element, flags)
+function createMatrixButtons(element)
 {
-	element.innerHtml = "";
-
-	var table = document.createElement("table");
-	for (let row = 0; row < flags.length; row++) 
+	fetch('/bulbInfo.json')
+	.then(response => 
 	{
+		if (!response.ok) {
+			throw new Error("HTTP error " + response.status);
+		}
+		return response.json();
+	})
+	.then(json => 
+	{
+		let bulbInfo = json.bulbInfo;
+		
+		var table = document.createElement("table");
 		var tableRow = document.createElement("tr");
-		for (let column = 0; column < flags[0].length; column++) 
+		for (let bulbIndex = 0; bulbIndex < bulbInfo.length; bulbIndex++) 
 		{
 			const tableElement = document.createElement("td");
 			const button = document.createElement("button");
-			if(flags[row][column])
+
+			if(bulbInfo[bulbIndex].isOn)
 				button.classList.add("on");
 			else
 				button.classList.add("off");
-			const x = column;
-			const y = row;
+
+			const x = bulbIndex;
+			const y = 0 ;
 			button.onclick = (event) => { toggleLED(button, x, y); };
 			tableElement.appendChild(button);
 			tableRow.appendChild(tableElement);
 		}
-
 		table.appendChild(tableRow);
-	}
-
-	element.appendChild(table);
+		element.appendChild(table);
+	})
+	.catch(error => 
+	{
+		alert("Bulb info could not be parsed: " + error.message);
+	})
 }
 
 function toggleLED(button, x, y) 
