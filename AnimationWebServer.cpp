@@ -1,4 +1,5 @@
 #include "AnimationWebServer.h"
+#include "Credentials.h"
 
 //#include <Arduino_LED_Matrix.h>
 #define MIN_BRIGHTNESS 5
@@ -41,7 +42,6 @@ static int currentAnimationIndex;
 struct BulbInfo
 {
 	Color color = Color::White;
-	bool isOn = false;
 };
 BulbInfo bulbs[NUM_STRAND_LEDS];
 
@@ -49,14 +49,7 @@ void refreshStrandFromBulbInfo()
 {
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
-		if(bulbs[bulbIndex].isOn)
-		{
-			setLed(bulbIndex, bulbs[bulbIndex].color);
-		}
-		else
-		{
-			setLed(bulbIndex, Color::Black);
-		}
+		setLed(bulbIndex, bulbs[bulbIndex].color);
 	}
 
 	FastLED.show();
@@ -72,7 +65,6 @@ void AnimationWebServer::startServer()
 	// Zero out bulbs
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
-		bulbs[bulbIndex].isOn = false;
 		bulbs[bulbIndex].color = Color::White;
 	}
 
@@ -111,7 +103,11 @@ void AnimationWebServer::startServer()
 	server.addRoute("/index.html", handleHome);
 	server.addRoute("/ledmessage.html", handleLedMessage);
 	server.addRoute("/points.html", handlePointLeds);
+
+	// Api calls
 	server.addRoute("/bulbInfo.json", handleBulbDataRequested);
+	server.addRoute("/setLedColor.html", handleSetLedColorRequested);
+	server.addRoute("/setAllLedsColor.html", handleSetAllLedsColorRequested);
 	
 	// Set custom 404 handler
 	server.setNotFoundHandler(handleNotFound);
@@ -293,25 +289,67 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 	{
 		server.sendResponse(client, HTML_SET_LEDS_CONTENT, MIME_HTML_TYPE);
 	}
-	else if (method == "POST") 
+}
+
+void AnimationWebServer::handleSetLedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	if (method == "POST") 
 	{
 		// Some sanity checking
 		if(jsonData.length() < 50)
 		{
-			int commaIndex = jsonData.indexOf(',');
-			String x = jsonData.substring(0, commaIndex);
-			String y = jsonData.substring(commaIndex + 1);
-			int row = y.toInt();
-			int bulbIndex = x.toInt();
+			int endOfBulbIndex = jsonData.indexOf(',');
+			int endOfRIndex = jsonData.indexOf(',', endOfBulbIndex + 1);
+			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+			String bulbIndexString = jsonData.substring(0, endOfBulbIndex);
+			String rValueString = jsonData.substring(endOfBulbIndex + 1, endOfRIndex);
+			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+			String bValueString = jsonData.substring(endOfGIndex + 1);
+
+			int bulbIndex = bulbIndexString.toInt();
+			int r = rValueString.toInt();
+			int g = gValueString.toInt();
+			int b = bValueString.toInt();
 			if(bulbIndex >= 0 && bulbIndex < NUM_STRAND_LEDS)
 			{
-				bulbs[bulbIndex].isOn = !bulbs[bulbIndex].isOn;
-
-				refreshStrandFromBulbInfo();
+				bulbs[bulbIndex].color = Color(r, g, b);
 			}
+			refreshStrandFromBulbInfo();
+		}
+	}
+}
+
+void AnimationWebServer::handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	if (method == "POST") 
+	{
+		// Some sanity checking
+		if(jsonData.length() < 50)
+		{
+			int endOfRIndex = jsonData.indexOf(',');
+			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+			String rValueString = jsonData.substring(0, endOfRIndex);
+			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+			String bValueString = jsonData.substring(endOfGIndex + 1);
+			int r = rValueString.toInt();
+			int g = gValueString.toInt();
+			int b = bValueString.toInt();
+
+			debugValue("Json recieved", jsonData);
+			debugValue("R", rValueString);
+			debugValue("G", gValueString);
+			debugValue("B", bValueString);
+			
+			for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
+				bulbs[bulbIndex].color = Color(r, g, b);
+			refreshStrandFromBulbInfo();
 		}
 
-		server.sendResponse(client, "");
+		//server.sendResponse(client, "");
 	}
 }
 
@@ -331,7 +369,7 @@ void AnimationWebServer::handleBulbDataRequested(WiFiClient& client, const Strin
 	for (int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++) 
 	{
 		const BulbInfo& info = bulbs[ledIndex];
-		sprintf(stringBuffer, "{\"r\": %d, \"g\": %d, \"b\": %d, \"isOn\": %s},", info.color.r, info.color.g, info.color.b, info.isOn ? "true" : "false"); 
+		sprintf(stringBuffer, "{\"r\": %d, \"g\": %d, \"b\": %d},", info.color.r, info.color.g, info.color.b); 
 		jsonBuilder += stringBuffer;
 	}
 	// Delete trailing comma

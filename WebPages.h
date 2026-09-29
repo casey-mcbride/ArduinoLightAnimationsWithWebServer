@@ -1,4 +1,4 @@
-static const char* HTML_CONTENT_HOME = R""""(
+static const char HTML_CONTENT_HOME[] PROGMEM = R""""(
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -17,7 +17,7 @@ static const char* HTML_CONTENT_HOME = R""""(
 </html>
 )"""";
 
-static const char* HTML_CONTENT_404 = R""""(
+static const char HTML_CONTENT_404[] PROGMEM = R""""(
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -112,23 +112,72 @@ button
 	cursor: pointer;
 }
 
+input[type="color" i] 
+{
+	border-radius: 0%;
+	inline-size: 20px;
+	block-size: 20px;
+	border-width: 1px;
+	border-style: none;
+/* border-color: rgba( 0, 255, 153, 0.5); */
+	width: 15px;
+}
+button 
+{
+	margin: 0;
+	padding: 10px 20px; /* Adjust padding as needed */
+}
+.button-container 
+{
+	display: flex;
+	gap: 0; /* Set gap to zero to remove space between child elements */
+}
+
 body
 {
 	color: blue;
 }
 
-.on
+.verticalLineDiv 
 {
-	background-color: red;
+	border-left: 6px solid green;
+	height: 500px;
 }
 
-.off
-{
-	background-color: white;
-}
+
 )rawliteral";
 
 static const char SCRIPTS_JS[] PROGMEM = R"rawliteral(
+
+function getRateLimitedCallback(actualFunction, delayMS)
+{
+	let timeout = null;
+	let lastCall = 0;
+
+	let rateLimitedCallback = () =>
+	{
+		if(timeout != null)
+		{
+			clearTimeout(timeout);
+			timeout = null;
+		}
+
+		let msSinceLastCall = Date.now() - lastCall;
+
+		if( msSinceLastCall > delayMS )
+		{
+			actualFunction();
+			lastCall = Date.now();
+		}
+		else
+		{
+			timeout = setTimeout(rateLimitedCallback, delayMS - msSinceLastCall);
+		}
+	}
+
+	return rateLimitedCallback;
+}
+
 function createMatrixButtons(element)
 {
 	fetch('/bulbInfo.json')
@@ -141,27 +190,63 @@ function createMatrixButtons(element)
 	})
 	.then(json => 
 	{
+		element.innerHtml = "";
+
 		let bulbInfo = json.bulbInfo;
 		
 		var table = document.createElement("table");
-		var tableRow = document.createElement("tr");
+		var lowerRow = document.createElement("tr");
+		var isChangingAllLeds = false;
+		var singleColorPickers = [];
+
+		{
+			const colorPickerContainer = document.createElement("td");
+			const colorPicker = document.createElement("input");
+			colorPicker.type = "color";
+			colorPicker.addEventListener('input', getRateLimitedCallback(() => 
+			{
+				isChangingAllLeds = true;
+
+				// Set all color pickers
+				setAllLedsColor(hexToRgb(colorPicker.value));
+				singleColorPickers.forEach(picker => picker.value = colorPicker.value);
+
+				isChangingAllLeds = false;
+			}, 300));
+			colorPicker.value = 'rgb(255, 255, 255)';
+			colorPickerContainer.appendChild(colorPicker);
+			lowerRow.appendChild(colorPickerContainer);
+		}
+
+		// Add a spacer
+		var spacerContainer = document.createElement("td");
+		var spacerDiv = document.createElement("div");
+		spacerDiv.classList.add("verticalLineDiv");
+		
+		spacerContainer.appendChild(spacerDiv);
+		lowerRow.appendChild(spacerContainer);
+
 		for (let bulbIndex = 0; bulbIndex < bulbInfo.length; bulbIndex++) 
 		{
-			const tableElement = document.createElement("td");
-			const button = document.createElement("button");
+			const bulb = bulbInfo[bulbIndex];
+			const bulbIndexToSet = bulbIndex;
 
-			if(bulbInfo[bulbIndex].isOn)
-				button.classList.add("on");
-			else
-				button.classList.add("off");
-
-			const x = bulbIndex;
-			const y = 0 ;
-			button.onclick = (event) => { toggleLED(button, x, y); };
-			tableElement.appendChild(button);
-			tableRow.appendChild(tableElement);
+			const colorPickerContainer = document.createElement("td");
+			const colorPicker = document.createElement("input");
+			colorPicker.classList.add("SingleLedColorPickers");
+			colorPicker.type = "color";
+			colorPicker.addEventListener('input', getRateLimitedCallback(() => 
+			{
+				if(!isChangingAllLeds)
+					setLedColor(bulbIndexToSet, hexToRgb(colorPicker.value));
+			}, 100));
+			colorPicker.value = `rgb(${bulb.r},${bulb.g},${bulb.b})`;
+			singleColorPickers.push(colorPicker);
+			colorPickerContainer.appendChild(colorPicker);
+			lowerRow.appendChild(colorPickerContainer);
 		}
-		table.appendChild(tableRow);
+
+		table.appendChild(lowerRow);
 		element.appendChild(table);
 	})
 	.catch(error => 
@@ -170,24 +255,34 @@ function createMatrixButtons(element)
 	})
 }
 
-function toggleLED(button, x, y) 
+function setLedColor(bulbIndex, color) 
 {
-	fetch("/points.html",
+	fetch("/setLedColor.html",
 	{
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		body: x + "," + y
+		body: `${bulbIndex},${color.r},${color.g},${color.b}`
 	});
-
-	if(button.classList.contains("off"))
-	{
-		button.classList.remove("off");
-		button.classList.add("on");
-	}
-	else
-	{
-		button.classList.remove("on");
-		button.classList.add("off");
-	}
 }
+
+function setAllLedsColor(color) 
+{
+	fetch("/setAllLedsColor.html",
+	{
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: `${color.r},${color.g},${color.b}`
+	});
+}
+
+function hexToRgb(hex) {
+	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return result ? 
+	{
+		r: parseInt(result[1], 16),
+		g: parseInt(result[2], 16),
+		b: parseInt(result[3], 16)
+	} : null;
+}
+	
 )rawliteral";
