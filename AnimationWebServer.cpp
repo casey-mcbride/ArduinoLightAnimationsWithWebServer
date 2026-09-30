@@ -1,5 +1,7 @@
 #include "AnimationWebServer.h"
 #include "Credentials.h"
+#include "WebPages.h"
+#include "WebScripts.h"
 
 //#include <Arduino_LED_Matrix.h>
 #define MIN_BRIGHTNESS 5

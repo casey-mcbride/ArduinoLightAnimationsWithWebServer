@@ -8,7 +8,6 @@
 #include "AnimationSets.h"
 #include "ArduinoGraphics.h"
 #include "Credentials.h"
-#include "WebPages.h"
 #include "UnoR4WiFi_WebServer.h"
 
 enum AnimationMode
