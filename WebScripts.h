@@ -29,6 +29,11 @@ function getRateLimitedCallback(actualFunction, delayMS)
 	return rateLimitedCallback;
 }
 
+function syncWrappingDivColor(embeddedColorPicker) 
+{
+	embeddedColorPicker.parentElement.style.backgroundColor = embeddedColorPicker.value;
+}
+
 function createMatrixButtons(element)
 {
 	fetch('/bulbInfo.json')
@@ -46,59 +51,82 @@ function createMatrixButtons(element)
 		let bulbInfo = json.bulbInfo;
 		
 		var table = document.createElement("table");
+		element.appendChild(table);
+
 		var lowerRow = document.createElement("tr");
-		var isChangingAllLeds = false;
+		table.appendChild(lowerRow);
+
 		var singleColorPickers = [];
 
 		{
-			const colorPickerContainer = document.createElement("td");
+			const changeAllColorsTableData = document.createElement("td");
+			lowerRow.appendChild(changeAllColorsTableData);
+
+			const pickerDiv = document.createElement("div");
+			changeAllColorsTableData.appendChild(pickerDiv);
+			pickerDiv.classList.add("colorpicker");
+			
 			const colorPicker = document.createElement("input");
+			pickerDiv.appendChild(colorPicker);
+
 			colorPicker.type = "color";
 			colorPicker.addEventListener('input', getRateLimitedCallback(() => 
 			{
-				isChangingAllLeds = true;
-
 				// Set all color pickers
 				setAllLedsColor(hexToRgb(colorPicker.value));
-				singleColorPickers.forEach(picker => picker.value = colorPicker.value);
-
-				isChangingAllLeds = false;
+				singleColorPickers.forEach(picker => 
+				{
+					picker.value = colorPicker.value;
+					syncWrappingDivColor(picker);
+				});
+				syncWrappingDivColor(colorPicker);
 			}, 300));
 			colorPicker.value = 'rgb(255, 255, 255)';
-			colorPickerContainer.appendChild(colorPicker);
-			lowerRow.appendChild(colorPickerContainer);
+
+			syncWrappingDivColor(colorPicker);
 		}
 
-		// Add a spacer
-		var spacerContainer = document.createElement("td");
-		var spacerDiv = document.createElement("div");
-		spacerDiv.classList.add("verticalLineDiv");
-		
-		spacerContainer.appendChild(spacerDiv);
-		lowerRow.appendChild(spacerContainer);
+		var ledTableContainer = document.createElement("td");
+		lowerRow.appendChild(ledTableContainer);
 
+		var ledTable = document.createElement("table");
+		ledTableContainer.appendChild(ledTable);
+
+		// Make multiple rows of the LEDs, so they're compact
+		var currentRow = null;
 		for (let bulbIndex = 0; bulbIndex < bulbInfo.length; bulbIndex++) 
 		{
+			// Every 10 bulbs make a new row
+			if(bulbIndex % 10 == 0)
+			{
+				currentRow = document.createElement("tr");
+				ledTable.appendChild(currentRow);
+			}
+
 			const bulb = bulbInfo[bulbIndex];
 			const bulbIndexToSet = bulbIndex;
 
-			const colorPickerContainer = document.createElement("td");
+			const tableData = document.createElement("td");
+			currentRow.appendChild(tableData);
+
+			const pickerDiv = document.createElement("div");
+			tableData.appendChild(pickerDiv);
+			pickerDiv.classList.add("colorpicker");
+
 			const colorPicker = document.createElement("input");
+			pickerDiv.appendChild(colorPicker);
+			singleColorPickers.push(colorPicker);
 			colorPicker.classList.add("SingleLedColorPickers");
 			colorPicker.type = "color";
 			colorPicker.addEventListener('input', getRateLimitedCallback(() => 
 			{
-				if(!isChangingAllLeds)
-					setLedColor(bulbIndexToSet, hexToRgb(colorPicker.value));
+				syncWrappingDivColor(colorPicker);
+				setLedColor(bulbIndexToSet, hexToRgb(colorPicker.value));
 			}, 100));
 			colorPicker.value = `rgb(${bulb.r},${bulb.g},${bulb.b})`;
-			singleColorPickers.push(colorPicker);
-			colorPickerContainer.appendChild(colorPicker);
-			lowerRow.appendChild(colorPickerContainer);
+			syncWrappingDivColor(colorPicker);
 		}
 
-		table.appendChild(lowerRow);
-		element.appendChild(table);
 	})
 	.catch(error => 
 	{
