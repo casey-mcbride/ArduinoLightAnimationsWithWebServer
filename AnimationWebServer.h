@@ -13,6 +13,7 @@
 enum AnimationMode
 {
 	ManualSet,
+	RepeatingColors,
 	PlainColor,
 	HoldAnimation,
 	RandomAnimation,
@@ -46,8 +47,12 @@ private:
 	static void handleScriptRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleStyleRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleLedMessage(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
-	static void handleBulbDataRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetLedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 	static void handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
+
+	// Api callbacks
+	static void handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetManualColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetRepeatedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetNumRepeatedColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 };

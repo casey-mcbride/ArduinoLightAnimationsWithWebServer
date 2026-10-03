@@ -36,7 +36,6 @@ static const int serverPort = 80;
 // static bool leds[ledMatrixWidth * ledMatrixHeight];
 
 static ulong startOfCurrentAnimation;
-static int lightBrightness;
 // static const Color plainStrandColor;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
@@ -46,6 +45,12 @@ struct BulbInfo
 	Color color = Color::White;
 };
 BulbInfo bulbs[NUM_STRAND_LEDS];
+
+static const int NUM_REPEATING_COLORS = 5;
+Color repeatingColors[NUM_REPEATING_COLORS];
+int repeatingColorsToUse = 2;
+
+static int lightBrightness;
 
 void refreshStrandFromBulbInfo()
 {
@@ -68,6 +73,11 @@ void AnimationWebServer::startServer()
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
 		bulbs[bulbIndex].color = Color::White;
+	}
+
+	for(int colorIndex = 0; colorIndex < NUM_REPEATING_COLORS; colorIndex++)
+	{
+		repeatingColors[colorIndex] = Color::White;
 	}
 
 	Serial.println("Arduino Uno R4 WiFi - Web Server");
@@ -107,10 +117,12 @@ void AnimationWebServer::startServer()
 	server.addRoute("/points.html", handlePointLeds);
 
 	// Api calls
-	server.addRoute("/bulbInfo.json", handleBulbDataRequested);
-	server.addRoute("/setLedColor.html", handleSetLedColorRequested);
+	server.addRoute("/ledControllerState.json", handleLedControllerStateRequested);
+	server.addRoute("/setManualLedColor.html", handleSetManualColorRequested);
 	server.addRoute("/setAllLedsColor.html", handleSetAllLedsColorRequested);
-	
+	server.addRoute("/setRepeatedColor.html", handleSetRepeatedColorRequested);
+	server.addRoute("/setNumRepeatedColors.html", handleSetNumRepeatedColorsRequested);
+
 	// Set custom 404 handler
 	server.setNotFoundHandler(handleNotFound);
 
@@ -293,9 +305,11 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 	}
 }
 
-void AnimationWebServer::handleSetLedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleSetManualColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	// TODO: Go into manual mode
 
 	if (method == "POST") 
 	{
@@ -355,19 +369,61 @@ void AnimationWebServer::handleSetAllLedsColorRequested(WiFiClient& client, cons
 	}
 }
 
-void AnimationWebServer::handleBulbDataRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleSetRepeatedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
-	debugMessage("handleBulbDataRequested");
+	if (method == "POST") 
+	{
+		// Some sanity checking
+		if(jsonData.length() < 50)
+		{
+			int repeatedColorEndIndex = jsonData.indexOf(',');
+			int endOfRIndex = jsonData.indexOf(',', repeatedColorEndIndex + 1);
+			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+			String repeatedColorIndexString = jsonData.substring(0, repeatedColorEndIndex);
+			String rValueString = jsonData.substring(repeatedColorEndIndex + 1, endOfRIndex);
+			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+			String bValueString = jsonData.substring(endOfGIndex + 1);
 
-	const int maxMatrixStringSize =  sizeof("[1,") * NUM_STRAND_LEDS;
+			int repeatedColorIndex = repeatedColorIndexString.toInt();
+			int r = rValueString.toInt();
+			int g = gValueString.toInt();
+			int b = bValueString.toInt();
+			if(repeatedColorIndex >= 0 && repeatedColorIndex < NUM_REPEATING_COLORS)
+			{
+				repeatingColors[repeatedColorIndex] = Color(r, g, b);
+			}
+			// TODO: Some kind of refresh
+		}
+	}
+}
+
+void AnimationWebServer::handleSetNumRepeatedColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	if (method == "POST") 
+	{
+		// Some sanity checking
+		if(jsonData.length() < 50)
+		{
+			repeatingColorsToUse = jsonData.toInt();
+			// TODO: Some kind of refresh
+		}
+	}
+}
+
+void AnimationWebServer::handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	const int maxMatrixStringSize =  sizeof("[1,") * NUM_STRAND_LEDS * 5 /*Fudge factor*/;
 	char stringBuffer[50]; 
-	String jsonBuilder = "{\"bulbInfo\":[\n";
-	// Reserve the string for the maximum estimated size that it could take up
-	jsonBuilder.reserve(jsonBuilder.length() + maxMatrixStringSize);
 
-	// Build an array of bulbInfo json
+	// Build an array of bulbInfo
+	String jsonBuilder = "{\"bulbInfo\":[\n";
+	jsonBuilder.reserve(jsonBuilder.length() + maxMatrixStringSize);
 	for (int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++) 
 	{
 		const BulbInfo& info = bulbs[ledIndex];
@@ -376,7 +432,27 @@ void AnimationWebServer::handleBulbDataRequested(WiFiClient& client, const Strin
 	}
 	// Delete trailing comma
 	jsonBuilder.remove(jsonBuilder.length() - 1);
-	jsonBuilder += "]}";
+	jsonBuilder += "],";
+
+	// Add the repeating colors
+	jsonBuilder += "\"repeatingColors\":[\n";
+	for(int colorIndex = 0; colorIndex < NUM_REPEATING_COLORS; colorIndex++)
+	{
+		const Color& color = repeatingColors[colorIndex];
+		sprintf(stringBuffer, "{\"r\": %d, \"g\": %d, \"b\": %d},", color.r, color.g, color.b); 
+		jsonBuilder += stringBuffer;
+	}
+	// Delete trailing comma
+	jsonBuilder.remove(jsonBuilder.length() - 1);
+	jsonBuilder += "],";
+
+	// Add num repeating colors
+	sprintf(stringBuffer, "\"repeatingColorsToUse\" : %d,", repeatingColorsToUse); 
+	jsonBuilder += stringBuffer;
+
+	// Add Brightness
+	sprintf(stringBuffer, "\"brightness\" : %d}", lightBrightness); 
+	jsonBuilder += stringBuffer;
 
 	server.sendResponse(client, jsonBuilder.c_str(), MIME_JASON_TYPE);
 }

@@ -61,13 +61,37 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 		<script src="/script.js"></script>
 		<link rel="stylesheet" type="text/css" href="style.css">
 	</head>
+
 	<body onload="handleBodyLoad()">
-		<h1>Manual Setting</h1>
-		<div id="innerContent"/>
+		<table>
+			<tr>
+				<td>
+					<h2>Manual Setting</h2>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div id="manualLeds"/>
+				</td>
+			</tr>
+
+			<tr>
+				<td>
+					<h2>Repeating Colors </h2>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div id="repeatingColors"/>
+				</td>
+			</tr>
+
+		</table>
+
 		<script>
 			function handleBodyLoad()
 			{
-				createMatrixButtons(document.getElementById("innerContent"));
+				createControlsFromControllerState(document.getElementById("manualLeds"), document.getElementById("repeatingColors"));
 			}
 		</script>
 	</body>
