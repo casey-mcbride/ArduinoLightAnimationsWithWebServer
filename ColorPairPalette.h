@@ -11,4 +11,5 @@ public:
 	ColorPairPalette(const Color* colorPairs, int numColorPairs);
 
 	void getNextRandomColorPair(Color& color1, Color& color2);
+	void updateColors(const Color* colorPairs, int numColorPairs);
 };

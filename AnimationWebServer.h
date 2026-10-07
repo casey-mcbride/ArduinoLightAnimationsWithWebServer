@@ -12,7 +12,7 @@
 
 enum AnimationMode
 {
-	ManualSet,
+	Manual,
 	RepeatingColors,
 	PlainColor,
 	HoldAnimation,
@@ -27,7 +27,7 @@ public:
 	static void startAnimationLoop();
 
 	// Delays the animation, while also waiting for interupts. Returns true if the current animation should be cancelled and returned from
-	static bool delayUnlessInterrupted(int delayMillieseconds);
+	static bool delayUnlessInterrupted(unsigned int delayMillieseconds);
 	static bool shouldCurrentAnimationContinue();
 
 private:
@@ -39,6 +39,7 @@ private:
 	static void setStrandBrightness(int brightness);
 
 	static void printToLed(const String text);
+	static void updateAnimationMode(AnimationMode mode);
 	// static bool getPixel(int column, int row) ;
 	// static bool setPixel(int column, int row, bool value) ;
 
@@ -53,6 +54,6 @@ private:
 	static void handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 	static void handleSetManualColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 	static void handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetRepeatedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetNumRepeatedColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetRepeatingLedColor(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+	static void handleSetNumRepeatingColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
 };

@@ -22,10 +22,9 @@ void colorMarch(ColorPalette& palette, const int bandSize)
 {
 	int cycleOffset = 0;
 
-	int numColors = palette.getNumColors();
-
 	WHILE_ANIMATION_LOOP
 	{
+		int numColors = palette.getNumColors();
 		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
 			Color c = palette.getColor(((i + cycleOffset) / bandSize) % numColors);
@@ -322,46 +321,46 @@ void lineSwap(ColorPalette& colorGenerator)
 
 void firelightAnimation()
 {
-	Color fireGlowLeft[NUM_STRAND_LEDS + 1];
-	Color fireGlowRight[NUM_STRAND_LEDS + 1];
-	Color dimmerRed = Color(60, 0, 0);
-	Color dimmestRed = Color(30, 0, 0);
-	Color dimmerOrange = dimColor(Color::Orange, 80);
+	// Color fireGlowLeft[NUM_STRAND_LEDS + 1];
+	// Color fireGlowRight[NUM_STRAND_LEDS + 1];
+	// Color dimmerRed = Color(60, 0, 0);
+	// Color dimmestRed = Color(30, 0, 0);
+	// Color dimmerOrange = dimColor(Color::Orange, 80);
 
-	Color fireColors[] = {Color::Red, dimmerRed, dimmestRed, dimmerOrange, Color::Orange, Color::Black, Color::Black};
-	ColorPalette palette = ColorPalette(fireColors, getStaticArraySize(fireColors));
+	// Color fireColors[] = {Color::Red, dimmerRed, dimmestRed, dimmerOrange, Color::Orange, Color::Black, Color::Black};
+	// ColorPalette palette = ColorPalette(fireColors, getStaticArraySize(fireColors));
 
-	for(int colorIndex = 0; colorIndex < NUM_STRAND_LEDS + 1; colorIndex++)
-	{
-		fireGlowLeft[colorIndex] = palette.getRandomColor(); 
-		fireGlowRight[colorIndex] = palette.getRandomColor(); 
-	}
-	const int lerpResolution = 40;
+	// for(int colorIndex = 0; colorIndex < NUM_STRAND_LEDS + 1; colorIndex++)
+	// {
+	// 	fireGlowLeft[colorIndex] = palette.getRandomColor(); 
+	// 	fireGlowRight[colorIndex] = palette.getRandomColor(); 
+	// }
+	// const int lerpResolution = 40;
 
-	WHILE_ANIMATION_LOOP
-	{
-		for(int lerpIndex = 0; lerpIndex < lerpResolution; lerpIndex++)
-		{
-			float lerpValue = (float)lerpIndex / lerpResolution;
+	// WHILE_ANIMATION_LOOP
+	// {
+	// 	for(int lerpIndex = 0; lerpIndex < lerpResolution; lerpIndex++)
+	// 	{
+	// 		float lerpValue = (float)lerpIndex / lerpResolution;
 
-			for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
-			{
-				Color leftContribution = colorLerp(lerpValue, fireGlowLeft[ledIndex], fireGlowLeft[ledIndex + 1]);
-				Color rightContribution = colorLerp(lerpValue, fireGlowRight[ledIndex], fireGlowRight[ledIndex + 1]);
+	// 		for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
+	// 		{
+	// 			Color leftContribution = colorLerp(lerpValue, fireGlowLeft[ledIndex], fireGlowLeft[ledIndex + 1]);
+	// 			Color rightContribution = colorLerp(lerpValue, fireGlowRight[ledIndex], fireGlowRight[ledIndex + 1]);
 
-				setLed(ledIndex, leftContribution);
-			}
+	// 			setLed(ledIndex, leftContribution);
+	// 		}
 
-			FastLED.show();
-			DELAY_OR_RETURN(50);
-		}
+	// 		FastLED.show();
+	// 		DELAY_OR_RETURN(50);
+	// 	}
 
-		// TODO: INstead of moving these all left, just keep track of the current index and replace it, i.e. make a circular queue
+	// 	// TODO: INstead of moving these all left, just keep track of the current index and replace it, i.e. make a circular queue
 
-		for(int i = 0; i < NUM_STRAND_LEDS; i++)
-		{
-			fireGlowLeft[i] = fireGlowLeft[i + 1];
-		}
-		fireGlowLeft[getStaticArraySize(fireGlowLeft) - 1] = palette.getRandomColor();
-	}
+	// 	for(int i = 0; i < NUM_STRAND_LEDS; i++)
+	// 	{
+	// 		fireGlowLeft[i] = fireGlowLeft[i + 1];
+	// 	}
+	// 	fireGlowLeft[getStaticArraySize(fireGlowLeft) - 1] = palette.getRandomColor();
+	// }
 }

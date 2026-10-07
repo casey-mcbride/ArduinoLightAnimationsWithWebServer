@@ -13,4 +13,5 @@ public:
 	Color getColor(int colorIndex) const;
 	Color getNextRandomColor();
 	Color getRandomColor();
+	void updateColors(const Color* colors, int numColors);
 };

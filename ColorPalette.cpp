@@ -2,8 +2,7 @@
 
 ColorPalette::ColorPalette(const Color* colors, int numColors)
 {
-	this->colors = colors;
-	this->numColors = numColors;
+	updateColors(colors, numColors);
 	randomColorIndex = random(numColors);
 }
 
@@ -30,4 +29,10 @@ Color ColorPalette::getRandomColor()
 	int index = random(0, numColors);
 
 	return colors[index];
+}
+
+void ColorPalette::updateColors(const Color* colors, int numColors)
+{
+	this->colors = colors;
+	this->numColors = numColors;
 }

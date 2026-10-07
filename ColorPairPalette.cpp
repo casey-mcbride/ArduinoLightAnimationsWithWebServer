@@ -2,8 +2,7 @@
 
 ColorPairPalette::ColorPairPalette(const Color* colorPairs, int numColorPairs)
 {
-	this->colorPairs = colorPairs;
-	this->numColorPairs = numColorPairs;
+	updateColors(colorPairs, numColorPairs);
 	randomColorPairIndex = random(numColorPairs);
 }
 
@@ -23,4 +22,10 @@ void ColorPairPalette::getNextRandomColorPair(Color& color1, Color& color2)
 		color1 = colorPairs[offsetIndex + 1];
 		color2 = colorPairs[offsetIndex];
 	}
+}
+
+void ColorPairPalette::updateColors(const Color* colorPairs, int numColorPairs)
+{
+	this->colorPairs = colorPairs;
+	this->numColorPairs = numColorPairs;
 }

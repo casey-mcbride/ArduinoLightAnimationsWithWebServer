@@ -2,6 +2,7 @@
 #include "Credentials.h"
 #include "WebPages.h"
 #include "WebScripts.h"
+#include "BasicAnimations.h"
 
 //#include <Arduino_LED_Matrix.h>
 #define MIN_BRIGHTNESS 5
@@ -30,6 +31,7 @@
 
 static UnoR4WiFi_WebServer server;
 static const int serverPort = 80;
+static bool animationSwitch = false;
 // static ArduinoLEDMatrix matrix;
 // static const int ledMatrixWidth = 12;
 // static const int ledMatrixHeight = 8;
@@ -42,13 +44,14 @@ static int currentAnimationIndex;
 
 struct BulbInfo
 {
-	Color color = Color::White;
+	Color color = Color::WHITE;
 };
 BulbInfo bulbs[NUM_STRAND_LEDS];
 
 static const int NUM_REPEATING_COLORS = 5;
 Color repeatingColors[NUM_REPEATING_COLORS];
 int repeatingColorsToUse = 2;
+ColorPalette repeatingPalette(repeatingColors, repeatingColorsToUse);
 
 static int lightBrightness;
 
@@ -72,21 +75,26 @@ void AnimationWebServer::startServer()
 	// Zero out bulbs
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
-		bulbs[bulbIndex].color = Color::White;
+		bulbs[bulbIndex].color = Color::WHITE;
 	}
 
 	for(int colorIndex = 0; colorIndex < NUM_REPEATING_COLORS; colorIndex++)
 	{
-		repeatingColors[colorIndex] = Color::White;
+		repeatingColors[colorIndex] = Color::WHITE;
 	}
+	repeatingColors[0] = Color::Red;
+	repeatingColors[1] = Color::Green;
+	repeatingColors[2] = Color::Blue;
+	repeatingColors[3] = Color::Purple;
+	repeatingColors[4] = Color::Orange;
 
-	Serial.println("Arduino Uno R4 WiFi - Web Server");
+	debugMessage("Arduino Uno R4 WiFi - Web Server");
 
 	// Connect to WiFi
-	Serial.print("Creating WIFI access point");
-	Serial.println(WIFI_SSID);
+	debugMessage("Creating WIFI access point");
+	debugMessage(WIFI_SSID);
 	uint8_t started = WiFi.beginAP(WIFI_SSID, WIFI_PASSWORD);
-	Serial.print("BeginAP code");
+	debugMessage("BeginAP code");
 
 	// Wait forever, printing failure
 	while(started == WL_AP_FAILED)
@@ -96,16 +104,16 @@ void AnimationWebServer::startServer()
 	
 	printToLed("Wifi started successfully");
 
-	Serial.println("Waiting for client connection");
+	debugMessage("Waiting for client connection");
 	while (WiFi.status() != WL_AP_CONNECTED)
 	{
 		delay(500);
 		printToLed(WiFi.localIP().toString());
 	}
 
-	Serial.println("connected!");
-	Serial.print("IP address: ");
-	Serial.println(WiFi.localIP());
+	debugMessage("connected!");
+	debugMessage("IP address: ");
+	debugMessage(WiFi.localIP());
 
 	// Configure routes
 	server.addRoute("/", handleHome);
@@ -113,15 +121,15 @@ void AnimationWebServer::startServer()
 	server.addRoute("/script.js", handleScriptRequest);
 	server.addRoute("/style.css", handleStyleRequest);
 	server.addRoute("/index.html", handleHome);
-	server.addRoute("/ledmessage.html", handleLedMessage);
+	// server.addRoute("/ledmessage.html", handleLedMessage);
 	server.addRoute("/points.html", handlePointLeds);
 
 	// Api calls
 	server.addRoute("/ledControllerState.json", handleLedControllerStateRequested);
 	server.addRoute("/setManualLedColor.html", handleSetManualColorRequested);
 	server.addRoute("/setAllLedsColor.html", handleSetAllLedsColorRequested);
-	server.addRoute("/setRepeatedColor.html", handleSetRepeatedColorRequested);
-	server.addRoute("/setNumRepeatedColors.html", handleSetNumRepeatedColorsRequested);
+	server.addRoute("/setRepeatingLedColor.html", handleSetRepeatingLedColor);
+	server.addRoute("/setNumRepeatingColors.html", handleSetNumRepeatingColorsRequested);
 
 	// Set custom 404 handler
 	server.setNotFoundHandler(handleNotFound);
@@ -129,16 +137,16 @@ void AnimationWebServer::startServer()
 	// Start server
 	server.begin();
 
-	Serial.println("\n=== Web Server Ready! ===");
-	Serial.print("Visit: http://");
-	Serial.println(WiFi.localIP());
-	Serial.println("Waiting for client");
+	debugMessage("\n=== Web Server Ready! ===");
+	debugMessage("Visit: http://");
+	debugMessage(WiFi.localIP());
+	debugMessage("Waiting for client");
 
 	initFastLeds();
 	FastLED.setBrightness(lightBrightness);
 	FastLED.show();
 
-	currentMode = AnimationMode::ManualSet;
+	currentMode = AnimationMode::Manual;
 	chooseNextRandomAnimation();
 }
 
@@ -154,15 +162,24 @@ void AnimationWebServer::startAnimationLoop()
 
 	while(true)
 	{
+		server.handleClient();
+		animationSwitch = false;
+		startOfCurrentAnimation = millis();
+
 		switch(currentMode)
 		{
-			case AnimationMode::ManualSet:
-				delayUnlessInterrupted(100000);
+			case AnimationMode::Manual:
+				refreshStrandFromBulbInfo();
 				debugMessage("Doing manual animation");
+				delayUnlessInterrupted(100000);
+			break;
+			case AnimationMode::RepeatingColors:
+				debugMessage("Doing repeating colors animation");
+				colorMarch(repeatingPalette, 3);
 			break;
 			case AnimationMode::PlainColor:
-				delayUnlessInterrupted(100000);
 				debugMessage("Doing plain color animation");
+				delayUnlessInterrupted(100000);
 			break;
 			case AnimationMode::HoldAnimation:
 				debugMessage("Doing hold animation");
@@ -189,12 +206,14 @@ void AnimationWebServer::chooseNextRandomAnimation()
 	debugValue("Newly picked animation index", currentAnimationIndex);
 }
 
-bool AnimationWebServer::delayUnlessInterrupted(int delayMillieseconds)
+bool AnimationWebServer::delayUnlessInterrupted(unsigned int delayMillieseconds)
 {
 	ulong startTime = millis();
 	while(millis() - startTime < delayMillieseconds)
 	{
 		server.handleClient();
+		if(animationSwitch)
+			return true;
 	}
 
 	return false;
@@ -202,6 +221,8 @@ bool AnimationWebServer::delayUnlessInterrupted(int delayMillieseconds)
 
 bool AnimationWebServer::shouldCurrentAnimationContinue()
 {
+	if(animationSwitch)
+		return false;
 	return currentMode == AnimationMode::HoldAnimation || millis() - startOfCurrentAnimation < animationMilliSeconds;
 }
 
@@ -225,6 +246,16 @@ void AnimationWebServer::setStrandBrightness(int brightness)
 	FastLED.show();
 }
 
+void AnimationWebServer::updateAnimationMode(AnimationMode mode)
+{
+	if(mode != currentMode)
+	{
+		debugValue("New animtion mode", mode);
+		animationSwitch = true;
+		currentMode = mode;
+	}
+}
+
 void AnimationWebServer::printToLed(const String text)
 {
 	debugMessage(text);
@@ -242,16 +273,6 @@ void AnimationWebServer::printToLed(const String text)
 	matrix.endDraw();
 	*/
 }
-
-// bool AnimationWebServer::getPixel(int column, int row) 
-// {
-// 	return leds[row * ledMatrixWidth + column];
-// }
-
-// bool AnimationWebServer::setPixel(int column, int row, bool value) 
-// {
-// 	return leds[row * ledMatrixWidth + column] = value;
-// }
 
 void AnimationWebServer::handleHome(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
@@ -309,10 +330,10 @@ void AnimationWebServer::handleSetManualColorRequested(WiFiClient& client, const
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
-	// TODO: Go into manual mode
-
 	if (method == "POST") 
 	{
+		updateAnimationMode(AnimationMode::Manual);
+
 		// Some sanity checking
 		if(jsonData.length() < 50)
 		{
@@ -346,6 +367,8 @@ void AnimationWebServer::handleSetAllLedsColorRequested(WiFiClient& client, cons
 		// Some sanity checking
 		if(jsonData.length() < 50)
 		{
+			updateAnimationMode(AnimationMode::Manual);
+
 			int endOfRIndex = jsonData.indexOf(',');
 			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
 			String rValueString = jsonData.substring(0, endOfRIndex);
@@ -364,12 +387,10 @@ void AnimationWebServer::handleSetAllLedsColorRequested(WiFiClient& client, cons
 				bulbs[bulbIndex].color = Color(r, g, b);
 			refreshStrandFromBulbInfo();
 		}
-
-		//server.sendResponse(client, "");
 	}
 }
 
-void AnimationWebServer::handleSetRepeatedColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleSetRepeatingLedColor(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
@@ -378,6 +399,8 @@ void AnimationWebServer::handleSetRepeatedColorRequested(WiFiClient& client, con
 		// Some sanity checking
 		if(jsonData.length() < 50)
 		{
+			updateAnimationMode(AnimationMode::RepeatingColors);
+
 			int repeatedColorEndIndex = jsonData.indexOf(',');
 			int endOfRIndex = jsonData.indexOf(',', repeatedColorEndIndex + 1);
 			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
@@ -394,12 +417,12 @@ void AnimationWebServer::handleSetRepeatedColorRequested(WiFiClient& client, con
 			{
 				repeatingColors[repeatedColorIndex] = Color(r, g, b);
 			}
-			// TODO: Some kind of refresh
+			repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
 		}
 	}
 }
 
-void AnimationWebServer::handleSetNumRepeatedColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleSetNumRepeatingColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
@@ -408,8 +431,10 @@ void AnimationWebServer::handleSetNumRepeatedColorsRequested(WiFiClient& client,
 		// Some sanity checking
 		if(jsonData.length() < 50)
 		{
+			updateAnimationMode(AnimationMode::RepeatingColors);
+
 			repeatingColorsToUse = jsonData.toInt();
-			// TODO: Some kind of refresh
+			repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
 		}
 	}
 }

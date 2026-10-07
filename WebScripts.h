@@ -198,12 +198,14 @@ function createRepeatingLedControls(div, ledControllerState)
 	slider.id = "repeatingColorSlider";
 }
 
+const COMMON_CONTENT_TYPE = "text/plain";
+
 function setManualLedColor(bulbIndex, color) 
 {
 	fetch("/setManualLedColor.html",
 	{
 		method: "POST",
-		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		headers: { "Content-Type": COMMON_CONTENT_TYPE },
 		body: `${bulbIndex},${color.r},${color.g},${color.b}`
 	});
 }
@@ -213,18 +215,18 @@ function setRepeatingLedColor(repeatingColorIndex, color)
 	fetch("/setRepeatingLedColor.html",
 	{
 		method: "POST",
-		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		headers: { "Content-Type": COMMON_CONTENT_TYPE },
 		body: `${repeatingColorIndex},${color.r},${color.g},${color.b}`
 	});
 }
 
 function setNumRepeatingColors(numRepeatingColors) 
 {
-	fetch("/setNumRepeatingLedColors.html",
+	fetch("/setNumRepeatingColors.html",
 	{
 		method: "POST",
-		headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		body: '' + numRepeatingColors
+		headers: { "Content-Type": COMMON_CONTENT_TYPE },
+		body: `${numRepeatingColors}`
 	});
 }
 
@@ -233,7 +235,7 @@ function setAllLedsColor(color)
 	fetch("/setAllLedsColor.html",
 	{
 		method: "POST",
-		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		headers: { "Content-Type": COMMON_CONTENT_TYPE },
 		body: `${color.r},${color.g},${color.b}`
 	});
 }
