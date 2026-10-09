@@ -200,44 +200,34 @@ function createRepeatingLedControls(div, ledControllerState)
 
 const COMMON_CONTENT_TYPE = "text/plain";
 
-function setManualLedColor(bulbIndex, color) 
+function sendCommand(command, commandString) 
 {
-	fetch("/setManualLedColor.html",
+	fetch("/command.html",
 	{
 		method: "POST",
 		headers: { "Content-Type": COMMON_CONTENT_TYPE },
-		body: `${bulbIndex},${color.r},${color.g},${color.b}`
+		body: `${command}:${commandString}`
 	});
+}
+
+function setManualLedColor(bulbIndex, color) 
+{
+	sendCommand("SetManualLedColor", `${bulbIndex},${color.r},${color.g},${color.b}`);
 }
 
 function setRepeatingLedColor(repeatingColorIndex, color) 
 {
-	fetch("/setRepeatingLedColor.html",
-	{
-		method: "POST",
-		headers: { "Content-Type": COMMON_CONTENT_TYPE },
-		body: `${repeatingColorIndex},${color.r},${color.g},${color.b}`
-	});
+	sendCommand("SetRepeatingLedColor", `${repeatingColorIndex},${color.r},${color.g},${color.b}`);
 }
 
 function setNumRepeatingColors(numRepeatingColors) 
 {
-	fetch("/setNumRepeatingColors.html",
-	{
-		method: "POST",
-		headers: { "Content-Type": COMMON_CONTENT_TYPE },
-		body: `${numRepeatingColors}`
-	});
+	sendCommand("SetNumRepeatingColors", `${numRepeatingColors}`);
 }
 
 function setAllLedsColor(color) 
 {
-	fetch("/setAllLedsColor.html",
-	{
-		method: "POST",
-		headers: { "Content-Type": COMMON_CONTENT_TYPE },
-		body: `${color.r},${color.g},${color.b}`
-	});
+	sendCommand("SetAllLedsColor", `${color.r},${color.g},${color.b}`);
 }
 
 function hexToRgb(hex) {

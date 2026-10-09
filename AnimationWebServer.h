@@ -47,13 +47,16 @@ private:
 	static void handleNotFound(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleScriptRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 	static void handleStyleRequest(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
-	static void handleLedMessage(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
-	static void handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) ;
 
-	// Api callbacks
-	static void handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetManualColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetRepeatingLedColor(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
-	static void handleSetNumRepeatingColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+
+	static void handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData);
+	static void handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData);
+
+	static void handleCommand(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 
+
+	// Commands
+	static void handleSetManualColorRequested(const String& jsonData);
+	static void handleSetAllLedsColorRequested(const String& jsonData);
+	static void handleSetRepeatingLedColor(const String& jsonData);
+	static void handleSetNumRepeatingColorsRequested(const String& jsonData);
 };

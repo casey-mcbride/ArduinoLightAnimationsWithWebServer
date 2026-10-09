@@ -44,7 +44,7 @@ static int currentAnimationIndex;
 
 struct BulbInfo
 {
-	Color color = Color::WHITE;
+	Color color = Color::White;
 };
 BulbInfo bulbs[NUM_STRAND_LEDS];
 
@@ -75,12 +75,12 @@ void AnimationWebServer::startServer()
 	// Zero out bulbs
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
-		bulbs[bulbIndex].color = Color::WHITE;
+		bulbs[bulbIndex].color = Color::White;
 	}
 
 	for(int colorIndex = 0; colorIndex < NUM_REPEATING_COLORS; colorIndex++)
 	{
-		repeatingColors[colorIndex] = Color::WHITE;
+		repeatingColors[colorIndex] = Color::White;
 	}
 	repeatingColors[0] = Color::Red;
 	repeatingColors[1] = Color::Green;
@@ -121,15 +121,11 @@ void AnimationWebServer::startServer()
 	server.addRoute("/script.js", handleScriptRequest);
 	server.addRoute("/style.css", handleStyleRequest);
 	server.addRoute("/index.html", handleHome);
-	// server.addRoute("/ledmessage.html", handleLedMessage);
 	server.addRoute("/points.html", handlePointLeds);
 
 	// Api calls
 	server.addRoute("/ledControllerState.json", handleLedControllerStateRequested);
-	server.addRoute("/setManualLedColor.html", handleSetManualColorRequested);
-	server.addRoute("/setAllLedsColor.html", handleSetAllLedsColorRequested);
-	server.addRoute("/setRepeatingLedColor.html", handleSetRepeatingLedColor);
-	server.addRoute("/setNumRepeatingColors.html", handleSetNumRepeatingColorsRequested);
+	server.addRoute("/callCommand.html", handleCommand);
 
 	// Set custom 404 handler
 	server.setNotFoundHandler(handleNotFound);
@@ -295,25 +291,11 @@ void AnimationWebServer::handleStyleRequest(WiFiClient& client, const String& me
 	server.sendResponse(client, STYLE_CSS, MIME_CSS_TYPE);
 }
 
-void AnimationWebServer::handleLedMessage(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleNotFound(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
-	// Check for message parameter in query string
-	for (int i = 0; i < params.count; i++) 
-	{
-		if (String(params.params[i].key) == "message") 
-		{
-			String message = params.params[i].value;
-			Serial.print("message: ");
-			Serial.println(message);
-
-			printToLed(message);
-			break;
-		}
-	}
-
-	server.sendResponse(client, HTML_SET_MESSAGE_CONTENT, MIME_HTML_TYPE);
+	server.sendResponse(client, HTML_CONTENT_404, MIME_HTML_TYPE);
 }
 
 void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
@@ -323,119 +305,6 @@ void AnimationWebServer::handlePointLeds(WiFiClient& client, const String& metho
 	if (method == "GET") 
 	{
 		server.sendResponse(client, HTML_SET_LEDS_CONTENT, MIME_HTML_TYPE);
-	}
-}
-
-void AnimationWebServer::handleSetManualColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
-{
-	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
-
-	if (method == "POST") 
-	{
-		updateAnimationMode(AnimationMode::Manual);
-
-		// Some sanity checking
-		if(jsonData.length() < 50)
-		{
-			int endOfBulbIndex = jsonData.indexOf(',');
-			int endOfRIndex = jsonData.indexOf(',', endOfBulbIndex + 1);
-			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
-			String bulbIndexString = jsonData.substring(0, endOfBulbIndex);
-			String rValueString = jsonData.substring(endOfBulbIndex + 1, endOfRIndex);
-			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
-			String bValueString = jsonData.substring(endOfGIndex + 1);
-
-			int bulbIndex = bulbIndexString.toInt();
-			int r = rValueString.toInt();
-			int g = gValueString.toInt();
-			int b = bValueString.toInt();
-			if(bulbIndex >= 0 && bulbIndex < NUM_STRAND_LEDS)
-			{
-				bulbs[bulbIndex].color = Color(r, g, b);
-			}
-			refreshStrandFromBulbInfo();
-		}
-	}
-}
-
-void AnimationWebServer::handleSetAllLedsColorRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
-{
-	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
-
-	if (method == "POST") 
-	{
-		// Some sanity checking
-		if(jsonData.length() < 50)
-		{
-			updateAnimationMode(AnimationMode::Manual);
-
-			int endOfRIndex = jsonData.indexOf(',');
-			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
-			String rValueString = jsonData.substring(0, endOfRIndex);
-			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
-			String bValueString = jsonData.substring(endOfGIndex + 1);
-			int r = rValueString.toInt();
-			int g = gValueString.toInt();
-			int b = bValueString.toInt();
-
-			debugValue("Json recieved", jsonData);
-			debugValue("R", rValueString);
-			debugValue("G", gValueString);
-			debugValue("B", bValueString);
-			
-			for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
-				bulbs[bulbIndex].color = Color(r, g, b);
-			refreshStrandFromBulbInfo();
-		}
-	}
-}
-
-void AnimationWebServer::handleSetRepeatingLedColor(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
-{
-	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
-
-	if (method == "POST") 
-	{
-		// Some sanity checking
-		if(jsonData.length() < 50)
-		{
-			updateAnimationMode(AnimationMode::RepeatingColors);
-
-			int repeatedColorEndIndex = jsonData.indexOf(',');
-			int endOfRIndex = jsonData.indexOf(',', repeatedColorEndIndex + 1);
-			int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
-			String repeatedColorIndexString = jsonData.substring(0, repeatedColorEndIndex);
-			String rValueString = jsonData.substring(repeatedColorEndIndex + 1, endOfRIndex);
-			String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
-			String bValueString = jsonData.substring(endOfGIndex + 1);
-
-			int repeatedColorIndex = repeatedColorIndexString.toInt();
-			int r = rValueString.toInt();
-			int g = gValueString.toInt();
-			int b = bValueString.toInt();
-			if(repeatedColorIndex >= 0 && repeatedColorIndex < NUM_REPEATING_COLORS)
-			{
-				repeatingColors[repeatedColorIndex] = Color(r, g, b);
-			}
-			repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
-		}
-	}
-}
-
-void AnimationWebServer::handleSetNumRepeatingColorsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
-{
-	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
-
-	if (method == "POST") 
-	{
-		// Some sanity checking
-		if(jsonData.length() < 50)
-		{
-			updateAnimationMode(AnimationMode::RepeatingColors);
-
-			repeatingColorsToUse = jsonData.toInt();
-			repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
-		}
 	}
 }
 
@@ -482,9 +351,115 @@ void AnimationWebServer::handleLedControllerStateRequested(WiFiClient& client, c
 	server.sendResponse(client, jsonBuilder.c_str(), MIME_JASON_TYPE);
 }
 
-void AnimationWebServer::handleNotFound(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
+void AnimationWebServer::handleCommand(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
-	server.sendResponse(client, HTML_CONTENT_404, MIME_HTML_TYPE);
+	if(method == "POST")
+	{
+		int commandIndexEnd = jsonData.indexOf(':');
+		String command = jsonData.substring(0, commandIndexEnd);
+		String strippedCommandParams = jsonData.substring(commandIndexEnd + 1);
+
+		if(command == "SetManualColor")
+		{
+			handleSetManualColorRequested(jsonData);
+		}
+		else if(command == "SetAllLedsColor")
+		{
+			handleSetAllLedsColorRequested(jsonData);
+		}
+		else if(command == "SetRepeatingLedColor")
+		{
+			handleSetRepeatingLedColor(jsonData);
+		}
+		else if(command == "SetNumRepeatingColors")
+		{
+			handleSetNumRepeatingColorsRequested(jsonData);
+		}
+		else
+		{
+			debugMessage("UnknownCommand: " + command);
+			return;
+		}
+
+		server.sendResponse(client, "", MIME_HTML_TYPE);
+	}
+}
+
+void AnimationWebServer::handleSetManualColorRequested(const String& jsonData) 
+{
+	updateAnimationMode(AnimationMode::Manual);
+
+	int endOfBulbIndex = jsonData.indexOf(',');
+	int endOfRIndex = jsonData.indexOf(',', endOfBulbIndex + 1);
+	int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+	String bulbIndexString = jsonData.substring(0, endOfBulbIndex);
+	String rValueString = jsonData.substring(endOfBulbIndex + 1, endOfRIndex);
+	String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+	String bValueString = jsonData.substring(endOfGIndex + 1);
+
+	int bulbIndex = bulbIndexString.toInt();
+	int r = rValueString.toInt();
+	int g = gValueString.toInt();
+	int b = bValueString.toInt();
+	if(bulbIndex >= 0 && bulbIndex < NUM_STRAND_LEDS)
+	{
+		bulbs[bulbIndex].color = Color(r, g, b);
+	}
+	refreshStrandFromBulbInfo();
+}
+
+void AnimationWebServer::handleSetAllLedsColorRequested(const String& jsonData) 
+{
+	updateAnimationMode(AnimationMode::Manual);
+
+	int endOfRIndex = jsonData.indexOf(',');
+	int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+	String rValueString = jsonData.substring(0, endOfRIndex);
+	String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+	String bValueString = jsonData.substring(endOfGIndex + 1);
+	int r = rValueString.toInt();
+	int g = gValueString.toInt();
+	int b = bValueString.toInt();
+
+	debugValue("Json recieved", jsonData);
+	debugValue("R", rValueString);
+	debugValue("G", gValueString);
+	debugValue("B", bValueString);
+	
+	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
+		bulbs[bulbIndex].color = Color(r, g, b);
+	refreshStrandFromBulbInfo();
+}
+
+void AnimationWebServer::handleSetRepeatingLedColor(const String& jsonData) 
+{
+	updateAnimationMode(AnimationMode::RepeatingColors);
+
+	int repeatedColorEndIndex = jsonData.indexOf(',');
+	int endOfRIndex = jsonData.indexOf(',', repeatedColorEndIndex + 1);
+	int endOfGIndex = jsonData.indexOf(',', endOfRIndex + 1);
+	String repeatedColorIndexString = jsonData.substring(0, repeatedColorEndIndex);
+	String rValueString = jsonData.substring(repeatedColorEndIndex + 1, endOfRIndex);
+	String gValueString = jsonData.substring(endOfRIndex + 1, endOfGIndex);
+	String bValueString = jsonData.substring(endOfGIndex + 1);
+
+	int repeatedColorIndex = repeatedColorIndexString.toInt();
+	int r = rValueString.toInt();
+	int g = gValueString.toInt();
+	int b = bValueString.toInt();
+	if(repeatedColorIndex >= 0 && repeatedColorIndex < NUM_REPEATING_COLORS)
+	{
+		repeatingColors[repeatedColorIndex] = Color(r, g, b);
+	}
+	repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
+}
+
+void AnimationWebServer::handleSetNumRepeatingColorsRequested(const String& jsonData) 
+{
+	updateAnimationMode(AnimationMode::RepeatingColors);
+
+	repeatingColorsToUse = jsonData.toInt();
+	repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
 }
