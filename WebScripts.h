@@ -179,6 +179,7 @@ function createRepeatingLedControls(div, ledControllerState)
 		syncWrappingDivColor(colorPicker);
 	}
 
+	// Create num repeating Colors slider
 	row = document.createElement("tr");
 	table.appendChild(row);
 
@@ -186,23 +187,42 @@ function createRepeatingLedControls(div, ledControllerState)
 	row.appendChild(sliderTableItem);
 	sliderTableItem.colSpan = 5;
 
-	const slider = document.createElement("input");
-	sliderTableItem.appendChild(slider);
-	slider.type = "range";
-	slider.min = "1";
-	slider.max = "5";
-	slider.value = ledControllerState.repeatingColorsToUse; 
-	slider.class = "slider";
-	slider.margin = "2 2 10 2";
-	slider.oninput = getRateLimitedCallback(() => setNumRepeatingColors(slider.value), STANDARD_DELAY_MS);
-	slider.id = "repeatingColorSlider";
+	const numColorsSlider = document.createElement("input");
+	sliderTableItem.appendChild(numColorsSlider);
+	numColorsSlider.type = "range";
+	numColorsSlider.min = "1";
+	numColorsSlider.max = "5";
+	numColorsSlider.value = ledControllerState.repeatingColorsToUse; 
+	numColorsSlider.class = "slider";
+	numColorsSlider.margin = "2 2 10 2";
+	numColorsSlider.oninput = getRateLimitedCallback(() => setNumRepeatingColors(numColorsSlider.value), STANDARD_DELAY_MS);
+	numColorsSlider.id = "repeatingColorSlider";
+
+	// Create brightness slider
+	row = document.createElement("tr");
+	table.appendChild(row);
+
+	sliderTableItem = document.createElement("td");
+	row.appendChild(sliderTableItem);
+	sliderTableItem.colSpan = 5;
+
+	const brightnessSlider = document.createElement("input");
+	sliderTableItem.appendChild(brightnessSlider);
+	brightnessSlider.type = "range";
+	brightnessSlider.min = "0";
+	brightnessSlider.max = "100";
+	brightnessSlider.value = ledControllerState.brightness; 
+	brightnessSlider.class = "slider";
+	brightnessSlider.margin = "2 2 10 2";
+	brightnessSlider.oninput = getRateLimitedCallback(() => setBrightness(brightnessSlider.value), LONG_OPERATION_DELAY_MS);
+	brightnessSlider.id = "brightnessSlider";
 }
 
 const COMMON_CONTENT_TYPE = "text/plain";
 
 function sendCommand(command, commandString) 
 {
-	fetch("/command.html",
+	fetch("/callCommand.html",
 	{
 		method: "POST",
 		headers: { "Content-Type": COMMON_CONTENT_TYPE },
@@ -228,6 +248,11 @@ function setNumRepeatingColors(numRepeatingColors)
 function setAllLedsColor(color) 
 {
 	sendCommand("SetAllLedsColor", `${color.r},${color.g},${color.b}`);
+}
+
+function setBrightness(brightness) 
+{
+	sendCommand("SetBrightness", `${brightness}`);
 }
 
 function hexToRgb(hex) {

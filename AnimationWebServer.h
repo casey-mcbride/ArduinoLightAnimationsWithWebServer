@@ -35,7 +35,6 @@ private:
 	AnimationWebServer() = delete;
 
 	static void chooseNextRandomAnimation();
-	static void setStrandColor(Color color);
 	static void setStrandBrightness(int brightness);
 
 	static void printToLed(const String text);
@@ -59,4 +58,5 @@ private:
 	static void handleSetAllLedsColorRequested(const String& jsonData);
 	static void handleSetRepeatingLedColor(const String& jsonData);
 	static void handleSetNumRepeatingColorsRequested(const String& jsonData);
+	static void handleSetBrightnessRequested(const String& jsonData);
 };

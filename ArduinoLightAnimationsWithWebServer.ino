@@ -15,7 +15,6 @@
 void setup()
 {
 	initDebugIO();
-	initFastLeds();
 
 	// If nothing in 0, noise produces a semi-random number
 	randomSeed(analogRead(0));

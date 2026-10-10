@@ -222,19 +222,6 @@ bool AnimationWebServer::shouldCurrentAnimationContinue()
 	return currentMode == AnimationMode::HoldAnimation || millis() - startOfCurrentAnimation < animationMilliSeconds;
 }
 
-void AnimationWebServer::setStrandColor(Color color)
-{
-	/*
-	plainStrandColor = color;
-	for(int i = 0; i < NUM_STRAND_LEDS; i++)
-	{
-		setLed(i, plainStrandColor);
-	}
-	currentMode = AnimationMode::PlainColor;
-	FastLED.show();
-	*/
-}
-
 void AnimationWebServer::setStrandBrightness(int brightness)
 {
 	lightBrightness = clamp(brightness, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
@@ -355,27 +342,32 @@ void AnimationWebServer::handleCommand(WiFiClient& client, const String& method,
 {
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
+	debugMessage("Handling " + method + " command: "  + jsonData);
 	if(method == "POST")
 	{
 		int commandIndexEnd = jsonData.indexOf(':');
 		String command = jsonData.substring(0, commandIndexEnd);
-		String strippedCommandParams = jsonData.substring(commandIndexEnd + 1);
+		String commandParams = jsonData.substring(commandIndexEnd + 1);
 
-		if(command == "SetManualColor")
+		if(command == "SetManualLedColor")
 		{
-			handleSetManualColorRequested(jsonData);
+			handleSetManualColorRequested(commandParams);
 		}
 		else if(command == "SetAllLedsColor")
 		{
-			handleSetAllLedsColorRequested(jsonData);
+			handleSetAllLedsColorRequested(commandParams);
 		}
 		else if(command == "SetRepeatingLedColor")
 		{
-			handleSetRepeatingLedColor(jsonData);
+			handleSetRepeatingLedColor(commandParams);
 		}
 		else if(command == "SetNumRepeatingColors")
 		{
-			handleSetNumRepeatingColorsRequested(jsonData);
+			handleSetNumRepeatingColorsRequested(commandParams);
+		}
+		else if(command == "SetBrightness")
+		{
+			handleSetBrightnessRequested(commandParams);
 		}
 		else
 		{
@@ -462,4 +454,10 @@ void AnimationWebServer::handleSetNumRepeatingColorsRequested(const String& json
 
 	repeatingColorsToUse = jsonData.toInt();
 	repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
+}
+
+void AnimationWebServer::handleSetBrightnessRequested(const String& jsonData) 
+{
+	int brightness = jsonData.toInt();
+	setStrandBrightness(brightness);
 }
