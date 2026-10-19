@@ -136,12 +136,22 @@ button
 	cursor: pointer;
 }
 
+.user-input input[type="range"]
+{
+	margin-left: 5px;
+	background-color: #007bff;
+	color: #fff;
+	border: none;
+	padding: 5px 10px;
+	cursor: pointer;
+}
+
 /*Color picker style, put a color picker in a div with this class, and it will look much better*/
 .colorpicker 
 {
 	position: relative;
-	width: 10px;
-	height: 10px;
+	width: 25px;
+	height: 25px;
 	background-color: black;
 	border: solid 1px black;
 }
@@ -153,8 +163,8 @@ button
 	width: 100%;
 	height: 100%;
 	cursor: pointer;
-	width: 10px;
-	height: 10px;
+	width: 25px;
+	height: 25px;
 }
 
 body
@@ -167,6 +177,5 @@ body
 	border-left: 6px solid green;
 	height: 500px;
 }
-
 
 )rawliteral";

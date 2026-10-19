@@ -1,7 +1,7 @@
 static const char SCRIPTS_JS[] PROGMEM = R"rawliteral(
 
-const STANDARD_DELAY_MS = 100;
-const LONG_OPERATION_DELAY_MS = 300;
+const STANDARD_DELAY_MS = 500;
+const LONG_OPERATION_DELAY_MS = 800;
 
 function getRateLimitedCallback(actualFunction, delayMS)
 {
@@ -210,10 +210,13 @@ function createRepeatingLedControls(div, ledControllerState)
 	sliderTableItem.appendChild(brightnessSlider);
 	brightnessSlider.type = "range";
 	brightnessSlider.min = "0";
-	brightnessSlider.max = "100";
+	brightnessSlider.max = "255";
 	brightnessSlider.value = ledControllerState.brightness; 
 	brightnessSlider.class = "slider";
 	brightnessSlider.margin = "2 2 10 2";
+	brightnessSlider.writingMode = "vertical-lr";
+	brightnessSlider.direction = "rtl";
+	brightnessSlider.appearance = "slider-vertical";
 	brightnessSlider.oninput = getRateLimitedCallback(() => setBrightness(brightnessSlider.value), LONG_OPERATION_DELAY_MS);
 	brightnessSlider.id = "brightnessSlider";
 }
@@ -222,6 +225,7 @@ const COMMON_CONTENT_TYPE = "text/plain";
 
 function sendCommand(command, commandString) 
 {
+	console.log(`${command} running: parameters: ${commandString}`)
 	fetch("/callCommand.html",
 	{
 		method: "POST",

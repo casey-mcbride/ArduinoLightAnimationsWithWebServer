@@ -5,8 +5,8 @@
 #include "BasicAnimations.h"
 
 //#include <Arduino_LED_Matrix.h>
-#define MIN_BRIGHTNESS 5
-#define MAX_BRIGHTNESS 100
+#define MIN_BRIGHTNESS 0
+#define MAX_BRIGHTNESS 255
 
 #ifdef DEBUG
 	static const ulong animationMilliSeconds = (ulong)12 * (ulong)1000;// need to cast, otherwise you get int max, idky
@@ -42,6 +42,9 @@ static ulong startOfCurrentAnimation;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
 
+bool serverStarted = false;
+bool serverFailed = false;
+
 struct BulbInfo
 {
 	Color color = Color::White;
@@ -53,7 +56,7 @@ Color repeatingColors[NUM_REPEATING_COLORS];
 int repeatingColorsToUse = 2;
 ColorPalette repeatingPalette(repeatingColors, repeatingColorsToUse);
 
-static int lightBrightness;
+static byte lightBrightness;
 
 void refreshStrandFromBulbInfo()
 {
@@ -75,7 +78,7 @@ void AnimationWebServer::startServer()
 	// Zero out bulbs
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 	{
-		bulbs[bulbIndex].color = Color::White;
+		bulbs[bulbIndex].color = Color::Red;
 	}
 
 	for(int colorIndex = 0; colorIndex < NUM_REPEATING_COLORS; colorIndex++)
@@ -88,6 +91,21 @@ void AnimationWebServer::startServer()
 	repeatingColors[3] = Color::Purple;
 	repeatingColors[4] = Color::Orange;
 
+	initFastLeds();
+	FastLED.setBrightness(lightBrightness);
+	FastLED.show();
+	
+	currentMode = AnimationMode::Manual;
+	chooseNextRandomAnimation();
+
+	initServer();
+}
+
+void AnimationWebServer::initServer()
+{
+	if(serverFailed || serverStarted)
+		return;
+
 	debugMessage("Arduino Uno R4 WiFi - Web Server");
 
 	// Connect to WiFi
@@ -97,21 +115,14 @@ void AnimationWebServer::startServer()
 	debugMessage("BeginAP code");
 
 	// Wait forever, printing failure
-	while(started == WL_AP_FAILED)
+	if(started == WL_AP_FAILED)
 	{
-		printToLed("WIFI failed to start");
+		debugMessage("WIFI failed to start");
+		serverFailed = true;
+		return;
 	}
 	
-	printToLed("Wifi started successfully");
-
-	debugMessage("Waiting for client connection");
-	while (WiFi.status() != WL_AP_CONNECTED)
-	{
-		delay(500);
-		printToLed(WiFi.localIP().toString());
-	}
-
-	debugMessage("connected!");
+	debugMessage("Wifi started successfully");
 	debugMessage("IP address: ");
 	debugMessage(WiFi.localIP());
 
@@ -137,13 +148,6 @@ void AnimationWebServer::startServer()
 	debugMessage("Visit: http://");
 	debugMessage(WiFi.localIP());
 	debugMessage("Waiting for client");
-
-	initFastLeds();
-	FastLED.setBrightness(lightBrightness);
-	FastLED.show();
-
-	currentMode = AnimationMode::Manual;
-	chooseNextRandomAnimation();
 }
 
 void AnimationWebServer::startAnimationLoop()
@@ -158,7 +162,8 @@ void AnimationWebServer::startAnimationLoop()
 
 	while(true)
 	{
-		server.handleClient();
+		if(!serverFailed)
+			server.handleClient();
 		animationSwitch = false;
 		startOfCurrentAnimation = millis();
 
@@ -207,7 +212,8 @@ bool AnimationWebServer::delayUnlessInterrupted(unsigned int delayMillieseconds)
 	ulong startTime = millis();
 	while(millis() - startTime < delayMillieseconds)
 	{
-		server.handleClient();
+		if(!serverFailed)
+			server.handleClient();
 		if(animationSwitch)
 			return true;
 	}
@@ -237,24 +243,6 @@ void AnimationWebServer::updateAnimationMode(AnimationMode mode)
 		animationSwitch = true;
 		currentMode = mode;
 	}
-}
-
-void AnimationWebServer::printToLed(const String text)
-{
-	debugMessage(text);
-	/*
-	matrix.beginDraw();
-	
-	matrix.stroke(0xFFFFFFFF);
-	matrix.textScrollSpeed(50);
-	
-	matrix.textFont(Font_5x7);
-	matrix.beginText(12, 1, 0xFFFFFF);
-	matrix.println(text);
-	matrix.endText(SCROLL_LEFT);
-	
-	matrix.endDraw();
-	*/
 }
 
 void AnimationWebServer::handleHome(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
@@ -416,9 +404,9 @@ void AnimationWebServer::handleSetAllLedsColorRequested(const String& jsonData)
 	int b = bValueString.toInt();
 
 	debugValue("Json recieved", jsonData);
-	debugValue("R", rValueString);
-	debugValue("G", gValueString);
-	debugValue("B", bValueString);
+	debugValue("R", r);
+	debugValue("G", g);
+	debugValue("B", b);
 	
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
 		bulbs[bulbIndex].color = Color(r, g, b);

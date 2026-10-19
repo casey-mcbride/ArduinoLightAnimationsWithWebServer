@@ -36,8 +36,8 @@ private:
 
 	static void chooseNextRandomAnimation();
 	static void setStrandBrightness(int brightness);
+	static void initServer();
 
-	static void printToLed(const String text);
 	static void updateAnimationMode(AnimationMode mode);
 	// static bool getPixel(int column, int row) ;
 	// static bool setPixel(int column, int row, bool value) ;
