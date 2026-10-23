@@ -15,19 +15,19 @@
 		return;\
 	}
 
-static const int BEAM_ANIMATION_DELAY = 20;
-
-// Marches throught the given colors, with bandSize number of colors repeated in a row
-void colorMarch(ColorPalette& palette, const int bandSize)
+	// Marches throught the given colors, with bandSize number of colors repeated in a row
+	void colorMarch(const int bandSize)
 {
 	int cycleOffset = 0;
+	ColorIterator& iterator = AnimationWebServer::getColorIterator();
 
 	WHILE_ANIMATION_LOOP
 	{
-		int numColors = palette.getNumColors();
+		ColorPalette* palette = iterator.getPalette();
+		int numColors = palette->getNumColors();
 		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
-			Color c = palette.getColor(((i + cycleOffset) / bandSize) % numColors);
+			Color c = palette->getColor(((i + cycleOffset) / bandSize) % numColors);
 			setLed(i, c);
 		}
 
@@ -36,6 +36,8 @@ void colorMarch(ColorPalette& palette, const int bandSize)
 		cycleOffset++;
 	}
 }
+/*
+static const int BEAM_ANIMATION_DELAY = 20;
 
 // Animation that has two colors moving together in one direction, with one color then the next with them lerped together
 void mixedWaveAnimation(Color color1, Color color2)
@@ -60,7 +62,7 @@ void mixedWaveAnimation(Color color1, Color color2)
 	}
 }
 
-void colorThrob(ColorPalette& colorGenerator)
+void colorThrob()
 {
 	const int TRANSITION_TICKS = 100;
 	Color color1 = colorGenerator.getNextRandomColor();
@@ -88,7 +90,7 @@ void colorThrob(ColorPalette& colorGenerator)
 
 // One color beam comes from one direction and fades out, then a different color beam comes from the other, repeat
 // The color starts dim, gets bright, gets dim again
-void colorHillAnimation(ColorPalette& colorGenerator)
+void colorHillAnimation()
 {
 	const byte trailLength = NUM_STRAND_LEDS;
 	const int BUFFER = 10;
@@ -130,7 +132,7 @@ void colorHillAnimation(ColorPalette& colorGenerator)
 
 // One color beam comes from one direction and fades out, then a different color beam comes from the other, repeat
 // The color starts bright, then gets dim near the tailend
-void colorBeamAnimation(ColorPalette& palette)
+void colorBeamAnimation()
 {
 	const byte trailLength = NUM_STRAND_LEDS;
 	const byte buffer = 10;
@@ -181,7 +183,7 @@ void colorBeamAnimation(ColorPalette& palette)
 }
 
 // Two colors come from both sides and pass through eachother
-void colorBeamCollisionAnimation(ColorPairPalette& colorPalette)
+void colorBeamCollisionAnimation()
 {
 	const byte trailLength = NUM_STRAND_LEDS;
 	const byte buffer = 10;
@@ -225,7 +227,7 @@ void colorBeamCollisionAnimation(ColorPairPalette& colorPalette)
 }
 
 // Randomly dim bulbs light up to a color, then fade back to black
-void randomBrightSpots(ColorPalette& generator, int fadeTicks)
+void randomBrightSpots(int fadeTicks)
 {
 	const int COLOR_CHANCE = 25;
 	WHILE_ANIMATION_LOOP
@@ -249,7 +251,7 @@ void randomBrightSpots(ColorPalette& generator, int fadeTicks)
 }
 
 // One color goes up, making it solid then another color merges down merging and erasing the covered one, rinse repeat
-void lineSwap(ColorPalette& colorGenerator)
+void lineSwap()
 {
 	const int WINDOW_SIZE = 50;
 	const int LINE_SWAP_DELAY = 70;
@@ -318,49 +320,4 @@ void lineSwap(ColorPalette& colorGenerator)
 		DELAY_OR_RETURN(500);
 	}
 }
-
-void firelightAnimation()
-{
-	// Color fireGlowLeft[NUM_STRAND_LEDS + 1];
-	// Color fireGlowRight[NUM_STRAND_LEDS + 1];
-	// Color dimmerRed = Color(60, 0, 0);
-	// Color dimmestRed = Color(30, 0, 0);
-	// Color dimmerOrange = dimColor(Color::Orange, 80);
-
-	// Color fireColors[] = {Color::Red, dimmerRed, dimmestRed, dimmerOrange, Color::Orange, Color::Black, Color::Black};
-	// ColorPalette palette = ColorPalette(fireColors, getStaticArraySize(fireColors));
-
-	// for(int colorIndex = 0; colorIndex < NUM_STRAND_LEDS + 1; colorIndex++)
-	// {
-	// 	fireGlowLeft[colorIndex] = palette.getRandomColor(); 
-	// 	fireGlowRight[colorIndex] = palette.getRandomColor(); 
-	// }
-	// const int lerpResolution = 40;
-
-	// WHILE_ANIMATION_LOOP
-	// {
-	// 	for(int lerpIndex = 0; lerpIndex < lerpResolution; lerpIndex++)
-	// 	{
-	// 		float lerpValue = (float)lerpIndex / lerpResolution;
-
-	// 		for(int ledIndex = 0; ledIndex < NUM_STRAND_LEDS; ledIndex++)
-	// 		{
-	// 			Color leftContribution = colorLerp(lerpValue, fireGlowLeft[ledIndex], fireGlowLeft[ledIndex + 1]);
-	// 			Color rightContribution = colorLerp(lerpValue, fireGlowRight[ledIndex], fireGlowRight[ledIndex + 1]);
-
-	// 			setLed(ledIndex, leftContribution);
-	// 		}
-
-	// 		FastLED.show();
-	// 		DELAY_OR_RETURN(50);
-	// 	}
-
-	// 	// TODO: INstead of moving these all left, just keep track of the current index and replace it, i.e. make a circular queue
-
-	// 	for(int i = 0; i < NUM_STRAND_LEDS; i++)
-	// 	{
-	// 		fireGlowLeft[i] = fireGlowLeft[i + 1];
-	// 	}
-	// 	fireGlowLeft[getStaticArraySize(fireGlowLeft) - 1] = palette.getRandomColor();
-	// }
-}
+*/

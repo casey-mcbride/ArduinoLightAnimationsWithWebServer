@@ -8,6 +8,7 @@
 #include "Basic.h"
 #include "AnimationWebServer.h"
 #include "ColorSets.h"
+/*
 
 void rainbowColorBeamCollisionAnimation();
 
@@ -75,7 +76,6 @@ const static AnimationFunction* ANIMATIONS[] =
 	&randomMixedRainbowWaveAnimation,
 	&rainbowLineSwap,
 
-	&firelightAnimation,
 	&halloweenMixedWave,
 	&halloweenLineSwap,
 	&halloweenBeamCollision,
@@ -84,7 +84,6 @@ const static AnimationFunction* ANIMATIONS[] =
 	&halloweenRedBeamCollision,
 
 	&candyCornMarch,
-	&firelightAnimation,
 	&thanksgivingMixedWave,
 	&thanksgivingLineSwap,
 	&thanksgivingBeamCollision,
@@ -100,3 +99,4 @@ const static AnimationFunction* ANIMATIONS[] =
 };
 
 static const int NUM_ANIMATIONS = getStaticArraySize(ANIMATIONS);
+*/

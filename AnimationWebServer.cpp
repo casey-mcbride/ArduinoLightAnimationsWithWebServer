@@ -3,6 +3,7 @@
 #include "WebPages.h"
 #include "WebScripts.h"
 #include "BasicAnimations.h"
+#include <map>
 
 //#include <Arduino_LED_Matrix.h>
 #define MIN_BRIGHTNESS 0
@@ -27,7 +28,7 @@
 #define MIME_HTML_TYPE "text/html"
 #define MIME_CSS_TYPE "text/css"
 #define MIME_JS_TYPE "text/javascript"
-#define MIME_JASON_TYPE "application/json"
+#define MIME_JSON_TYPE "application/json"
 
 static UnoR4WiFi_WebServer server;
 static const int serverPort = 80;
@@ -42,8 +43,10 @@ static ulong startOfCurrentAnimation;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
 
-bool serverStarted = false;
-bool serverFailed = false;
+static bool serverStarted = false;
+static bool serverFailed = false;
+
+static std::map<AnimationMode, String> ANIMATION_MODE_TO_STRING;
 
 struct BulbInfo
 {
@@ -51,10 +54,11 @@ struct BulbInfo
 };
 BulbInfo bulbs[NUM_STRAND_LEDS];
 
+static ColorIterator colorIterator;
 static const int NUM_REPEATING_COLORS = 5;
 Color repeatingColors[NUM_REPEATING_COLORS];
-int repeatingColorsToUse = 2;
-ColorPalette repeatingPalette(repeatingColors, repeatingColorsToUse);
+static int repeatingColorsToUse = 2;
+static ColorPalette repeatingPalette(repeatingColors, repeatingColorsToUse);
 
 static byte lightBrightness;
 
@@ -68,12 +72,39 @@ void refreshStrandFromBulbInfo()
 	FastLED.show();
 }
 
+void initAnimationModeMap()
+{
+	ANIMATION_MODE_TO_STRING.clear();
+
+	ANIMATION_MODE_TO_STRING.insert({AnimationMode::Manual, String("Manual")});
+	ANIMATION_MODE_TO_STRING.insert({AnimationMode::RepeatingColors, String("RepeatingColors")});
+	ANIMATION_MODE_TO_STRING.insert({AnimationMode::RandomAnimation, String("RandomAnimation")});
+}
+
+AnimationMode stringToAnimationMode(const String& string)
+{
+	for (auto it = ANIMATION_MODE_TO_STRING.begin(); it != ANIMATION_MODE_TO_STRING.end(); it++)
+	{
+		if(string == it->second)
+		{
+			return it->first;
+		}
+	}
+
+	return AnimationMode::Manual;
+}
+
 void AnimationWebServer::startServer()
 {
 	server = UnoR4WiFi_WebServer(serverPort);
 	startOfCurrentAnimation = millis();
 	lightBrightness = 75;
 	currentAnimationIndex = 0;
+
+	// Initialize palettes
+	colorIterator.setPalette(&repeatingPalette);
+	colorIterator.setPairPalette(&COMPLEX_RAINBOW_COLOR_PAIR_PALETTE);
+	initAnimationModeMap();
 
 	// Zero out bulbs
 	for(int bulbIndex = 0; bulbIndex < NUM_STRAND_LEDS; bulbIndex++)
@@ -136,6 +167,7 @@ void AnimationWebServer::initServer()
 
 	// Api calls
 	server.addRoute("/ledControllerState.json", handleLedControllerStateRequested);
+	server.addRoute("/enumerations.json", handleEnumerationsRequested);
 	server.addRoute("/callCommand.html", handleCommand);
 
 	// Set custom 404 handler
@@ -150,13 +182,19 @@ void AnimationWebServer::initServer()
 	debugMessage("Waiting for client");
 }
 
+ColorIterator& AnimationWebServer::getColorIterator()
+{
+	return colorIterator;
+}
+
 void AnimationWebServer::startAnimationLoop()
 {
-	if(NUM_ANIMATIONS <= 0)
-	{
-		debugMessage("No animations, so exiting animation loop");
-		return;
-	}
+	// TODO: Put back animations logic
+	// if(NUM_ANIMATIONS <= 0)
+	// {
+	// 	debugMessage("No animations, so exiting animation loop");
+	// 	return;
+	// }
 
 	debugMessage("Starting animation loop");
 
@@ -176,25 +214,17 @@ void AnimationWebServer::startAnimationLoop()
 			break;
 			case AnimationMode::RepeatingColors:
 				debugMessage("Doing repeating colors animation");
-				colorMarch(repeatingPalette, 3);
+				colorMarch(3);
 			break;
-			case AnimationMode::PlainColor:
-				debugMessage("Doing plain color animation");
-				delayUnlessInterrupted(100000);
-			break;
-			case AnimationMode::HoldAnimation:
-				debugMessage("Doing hold animation");
-				startOfCurrentAnimation = millis();
-				ANIMATIONS[currentAnimationIndex]();
-			break;
-
 			case AnimationMode::RandomAnimation:
-				debugMessage("Doing RandomAnimation ");
-				startOfCurrentAnimation = millis();
-				ANIMATIONS[currentAnimationIndex]();
-				// If we're still in the rotation mode, increment
-				if(currentMode == AnimationMode::RandomAnimation)
-					chooseNextRandomAnimation();
+			/*
+			debugMessage("Doing RandomAnimation ");
+			startOfCurrentAnimation = millis();
+			ANIMATIONS[currentAnimationIndex]();
+			// If we're still in the rotation mode, increment
+			if(currentMode == AnimationMode::RandomAnimation)
+			chooseNextRandomAnimation();
+			*/
 			break;
 		}
 	}
@@ -202,9 +232,9 @@ void AnimationWebServer::startAnimationLoop()
 
 void AnimationWebServer::chooseNextRandomAnimation()
 {
-	currentAnimationIndex = getNextRandomExclusive(currentAnimationIndex, NUM_ANIMATIONS);
-	toggleLedDirection();
-	debugValue("Newly picked animation index", currentAnimationIndex);
+	// currentAnimationIndex = getNextRandomExclusive(currentAnimationIndex, NUM_ANIMATIONS);
+	// toggleLedDirection();
+	// debugValue("Newly picked animation index", currentAnimationIndex);
 }
 
 bool AnimationWebServer::delayUnlessInterrupted(unsigned int delayMillieseconds)
@@ -225,7 +255,7 @@ bool AnimationWebServer::shouldCurrentAnimationContinue()
 {
 	if(animationSwitch)
 		return false;
-	return currentMode == AnimationMode::HoldAnimation || millis() - startOfCurrentAnimation < animationMilliSeconds;
+	return /*currentMode == AnimationMode::HoldAnimation ||*/ millis() - startOfCurrentAnimation < animationMilliSeconds;
 }
 
 void AnimationWebServer::setStrandBrightness(int brightness)
@@ -239,7 +269,7 @@ void AnimationWebServer::updateAnimationMode(AnimationMode mode)
 {
 	if(mode != currentMode)
 	{
-		debugValue("New animtion mode", mode);
+		debugValue("New animation mode", ANIMATION_MODE_TO_STRING[mode]);
 		animationSwitch = true;
 		currentMode = mode;
 	}
@@ -288,7 +318,7 @@ void AnimationWebServer::handleLedControllerStateRequested(WiFiClient& client, c
 	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
 
 	const int maxMatrixStringSize =  sizeof("[1,") * NUM_STRAND_LEDS * 5 /*Fudge factor*/;
-	char stringBuffer[50]; 
+	char stringBuffer[100]; 
 
 	// Build an array of bulbInfo
 	String jsonBuilder = "{\"bulbInfo\":[\n";
@@ -319,11 +349,35 @@ void AnimationWebServer::handleLedControllerStateRequested(WiFiClient& client, c
 	sprintf(stringBuffer, "\"repeatingColorsToUse\" : %d,", repeatingColorsToUse); 
 	jsonBuilder += stringBuffer;
 
+	// Add animation mode
+	sprintf(stringBuffer, "\"animationMode\" : \"%s\",", ANIMATION_MODE_TO_STRING[currentMode].c_str()); 
+	jsonBuilder += stringBuffer;
+
 	// Add Brightness
 	sprintf(stringBuffer, "\"brightness\" : %d}", lightBrightness); 
 	jsonBuilder += stringBuffer;
 
-	server.sendResponse(client, jsonBuilder.c_str(), MIME_JASON_TYPE);
+	server.sendResponse(client, jsonBuilder.c_str(), MIME_JSON_TYPE);
+}
+
+void AnimationWebServer::handleEnumerationsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData)
+{
+	SUPPRESS_WEB_HANDLER_UNUSED_VARIABLE_WARNING();
+
+	char stringBuffer[100]; 
+	String jsonBuilder = "{\"animationModes\":[\n";
+
+	for (auto const& x : ANIMATION_MODE_TO_STRING)
+	{
+		sprintf(stringBuffer, "\"%s\",", ANIMATION_MODE_TO_STRING[x.first].c_str()); 
+		jsonBuilder += stringBuffer;
+	}
+
+	// Delete trailing comma
+	jsonBuilder.remove(jsonBuilder.length() - 1);
+	jsonBuilder += "]}";
+
+	server.sendResponse(client, jsonBuilder.c_str(), MIME_JSON_TYPE);
 }
 
 void AnimationWebServer::handleCommand(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData) 
@@ -356,6 +410,10 @@ void AnimationWebServer::handleCommand(WiFiClient& client, const String& method,
 		else if(command == "SetBrightness")
 		{
 			handleSetBrightnessRequested(commandParams);
+		}
+		else if(command == "SetAnimationMode")
+		{
+			updateAnimationMode(stringToAnimationMode(commandParams));
 		}
 		else
 		{

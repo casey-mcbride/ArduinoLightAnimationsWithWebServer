@@ -1,5 +1,6 @@
 #include "AnimationSets.h"
 
+/*
 void rainbowColorBeamCollisionAnimation()
 {
 	colorBeamAnimation(COMPLEX_RAINBOW_COLOR_PALETTE);
@@ -167,3 +168,4 @@ void christmasBrightSpots()
 {
 	randomBrightSpots(CHRISTMAS_COLOR_PALETTE, 10);
 }
+*/

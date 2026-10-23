@@ -66,6 +66,17 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 		<table>
 			<tr>
 				<td>
+					<h2>Mode</h2>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<select id="animationModeSelector"/>
+				</td>
+			</tr>
+
+			<tr>
+				<td>
 					<h2>Manual Setting</h2>
 				</td>
 			</tr>
@@ -91,7 +102,10 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 		<script>
 			function handleBodyLoad()
 			{
-				createControlsFromControllerState(document.getElementById("manualLeds"), document.getElementById("repeatingColors"));
+				createControlsFromControllerState(
+				document.getElementById("manualLeds"),
+				document.getElementById("repeatingColors"),
+				document.getElementById("animationModeSelector"));
 			}
 		</script>
 	</body>

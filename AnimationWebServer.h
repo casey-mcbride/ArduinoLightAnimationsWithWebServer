@@ -9,14 +9,14 @@
 #include "ArduinoGraphics.h"
 #include "Credentials.h"
 #include "UnoR4WiFi_WebServer.h"
+#include "ColorIterator.h"
 
-enum AnimationMode
+enum class AnimationMode
 {
 	Manual,
 	RepeatingColors,
-	PlainColor,
-	HoldAnimation,
 	RandomAnimation,
+	/* Any new values should be added to the map as well */
 };
 
 // A class for controlling animations that the user can interact with via a webserver.
@@ -29,6 +29,8 @@ public:
 	// Delays the animation, while also waiting for interupts. Returns true if the current animation should be cancelled and returned from
 	static bool delayUnlessInterrupted(unsigned int delayMillieseconds);
 	static bool shouldCurrentAnimationContinue();
+
+	static ColorIterator& getColorIterator();
 
 private:
 
@@ -49,6 +51,7 @@ private:
 
 
 	static void handleLedControllerStateRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData);
+	static void handleEnumerationsRequested(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData);
 	static void handlePointLeds(WiFiClient& client, const String& method, const String& request, const QueryParams& params,const String& jsonData);
 
 	static void handleCommand(WiFiClient& client, const String& method, const String& request, const QueryParams& params, const String& jsonData); 

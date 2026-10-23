@@ -2,6 +2,7 @@ static const char SCRIPTS_JS[] PROGMEM = R"rawliteral(
 
 const STANDARD_DELAY_MS = 500;
 const LONG_OPERATION_DELAY_MS = 800;
+const COMMON_CONTENT_TYPE = "text/plain";
 
 function getRateLimitedCallback(actualFunction, delayMS)
 {
@@ -39,7 +40,7 @@ function syncWrappingDivColor(embeddedColorPicker)
 	embeddedColorPicker.parentElement.style.backgroundColor = embeddedColorPicker.value;
 }
 
-function createControlsFromControllerState(manualLedControlsDiv, repeatingColorControlsDiv)
+function createControlsFromControllerState(manualLedControlsDiv, repeatingColorControlsDiv, animationModeSelector)
 {
 	fetch('/ledControllerState.json')
 	.then(response => 
@@ -53,10 +54,27 @@ function createControlsFromControllerState(manualLedControlsDiv, repeatingColorC
 	{
 		createManualLedControls(manualLedControlsDiv, ledControllerState);
 		createRepeatingLedControls(repeatingColorControlsDiv, ledControllerState);
+
+		fetch('/enumerations.json')
+		.then(response => 
+		{
+			if (!response.ok) {
+				throw new Error("HTTP error " + response.status);
+			}
+			return response.json();
+		})
+		.then(animationModes =>
+		{
+			updateAnimationModeSelector(ledControllerState.animationMode, animationModes, animationModeSelector);
+		})
+		.catch(error => 
+		{
+			alert("Animation modes could not be parsed: " + error.message);
+		})
 	})
 	.catch(error => 
 	{
-		alert("Bulb info could not be parsed: " + error.message);
+		alert("Controller state info could not be parsed: " + error.message);
 	})
 }
 
@@ -221,7 +239,23 @@ function createRepeatingLedControls(div, ledControllerState)
 	brightnessSlider.id = "brightnessSlider";
 }
 
-const COMMON_CONTENT_TYPE = "text/plain";
+function updateAnimationModeSelector(currentMode, modesJson, selector)
+{
+	modesJson.animationModes.forEach(mode =>
+	{
+		const opt = document.createElement("option");
+
+		opt.setAttribute('value', mode);
+		opt.appendChild(document.createTextNode(mode));
+
+		// then append it to the select element
+		selector.appendChild(opt);
+	});
+	
+	selector.value = currentMode;
+
+	selector.onchange = getRateLimitedCallback(() => setAnimationMode(selector.value), STANDARD_DELAY_MS);
+}
 
 function sendCommand(command, commandString) 
 {
@@ -232,6 +266,11 @@ function sendCommand(command, commandString)
 		headers: { "Content-Type": COMMON_CONTENT_TYPE },
 		body: `${command}:${commandString}`
 	});
+}
+
+function setAnimationMode(mode) 
+{
+	sendCommand("SetAnimationMode", `${mode}`);
 }
 
 function setManualLedColor(bulbIndex, color) 
