@@ -63,7 +63,7 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 	</head>
 
 	<body onload="handleBodyLoad()">
-		<table>
+		<table style="margin:50px">
 			<tr>
 				<td>
 					<h2>Mode</h2>
@@ -88,12 +88,23 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 
 			<tr>
 				<td>
-					<h2>Repeating Colors </h2>
+					<h2>Repeating Colors</h2>
 				</td>
 			</tr>
 			<tr>
 				<td>
 					<div id="repeatingColors"/>
+				</td>
+			</tr>
+			
+			<tr>
+				<td>
+					<h2>General settings</h2>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table id="settingsTable" style="margin:0px"/>
 				</td>
 			</tr>
 
@@ -105,7 +116,8 @@ static const char HTML_SET_LEDS_CONTENT[] PROGMEM = R"rawliteral(
 				createControlsFromControllerState(
 				document.getElementById("manualLeds"),
 				document.getElementById("repeatingColors"),
-				document.getElementById("animationModeSelector"));
+				document.getElementById("animationModeSelector"),
+				document.getElementById("settingsTable"));
 			}
 		</script>
 	</body>

@@ -6,6 +6,7 @@
 #include "AnimationWebServer.h"
 
 #define WHILE_ANIMATION_LOOP ;\
+	long startOfAnimation = millis();\
 	while(AnimationWebServer::shouldCurrentAnimationContinue())
 
 #define DELAY_OR_RETURN(delayMS)\
@@ -15,16 +16,26 @@
 		return;\
 	}
 
-	// Marches throught the given colors, with bandSize number of colors repeated in a row
-	void colorMarch(const int bandSize)
-{
-	int cycleOffset = 0;
-	ColorIterator& iterator = AnimationWebServer::getColorIterator();
+#define POLL_OR_RETURN()\
+	if(AnimationWebServer::pollForInterrupt())\
+	{\
+		debugMessage("Early exit");\
+		return;\
+	}
 
+// Marches throught the given colors, with bandSize number of colors repeated in a row
+void colorMarch(const int bandSize)
+{
+	ColorIterator& iterator = AnimationWebServer::getColorIterator();
+	
 	WHILE_ANIMATION_LOOP
 	{
+		long elapsed = millis() - startOfAnimation;
 		ColorPalette* palette = iterator.getPalette();
 		int numColors = palette->getNumColors();
+
+		int ledCycleSize = bandSize * numColors;
+		int cycleOffset = AnimationWebServer::adjustCycleTime(elapsed) % ledCycleSize;
 		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
 			Color c = palette->getColor(((i + cycleOffset) / bandSize) % numColors);
@@ -32,8 +43,7 @@
 		}
 
 		FastLED.show();
-		DELAY_OR_RETURN(500);
-		cycleOffset++;
+		POLL_OR_RETURN();
 	}
 }
 /*

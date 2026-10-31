@@ -9,6 +9,9 @@
 #define MIN_BRIGHTNESS 0
 #define MAX_BRIGHTNESS 255
 
+#define MIN_SPEED_FACTOR 1
+#define MAX_SPEED_FACTOR 1000
+
 #ifdef DEBUG
 	static const ulong animationMilliSeconds = (ulong)12 * (ulong)1000;// need to cast, otherwise you get int max, idky
 #else
@@ -42,6 +45,8 @@ static ulong startOfCurrentAnimation;
 // static const Color plainStrandColor;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
+
+static int speedFactor = 500;
 
 static bool serverStarted = false;
 static bool serverFailed = false;
@@ -100,6 +105,7 @@ void AnimationWebServer::startServer()
 	startOfCurrentAnimation = millis();
 	lightBrightness = 75;
 	currentAnimationIndex = 0;
+	speedFactor = 500;
 
 	// Initialize palettes
 	colorIterator.setPalette(&repeatingPalette);
@@ -235,6 +241,16 @@ void AnimationWebServer::chooseNextRandomAnimation()
 	// currentAnimationIndex = getNextRandomExclusive(currentAnimationIndex, NUM_ANIMATIONS);
 	// toggleLedDirection();
 	// debugValue("Newly picked animation index", currentAnimationIndex);
+}
+
+bool AnimationWebServer::pollForInterrupt()
+{
+	if(!serverFailed)
+		server.handleClient();
+	if(animationSwitch)
+		return true;
+
+	return false;
 }
 
 bool AnimationWebServer::delayUnlessInterrupted(unsigned int delayMillieseconds)
@@ -415,6 +431,10 @@ void AnimationWebServer::handleCommand(WiFiClient& client, const String& method,
 		{
 			updateAnimationMode(stringToAnimationMode(commandParams));
 		}
+		else if(command == "SetSpeedFactor")
+		{
+			handleSetSpeedFactor(commandParams);
+		}
 		else
 		{
 			debugMessage("UnknownCommand: " + command);
@@ -423,6 +443,16 @@ void AnimationWebServer::handleCommand(WiFiClient& client, const String& method,
 
 		server.sendResponse(client, "", MIME_HTML_TYPE);
 	}
+}
+
+int AnimationWebServer::getSpeedFactor() 
+{
+	return speedFactor;
+}
+
+long AnimationWebServer::adjustCycleTime(long animationTime)
+{
+	return animationTime / speedFactor;
 }
 
 void AnimationWebServer::handleSetManualColorRequested(const String& jsonData) 
@@ -498,7 +528,7 @@ void AnimationWebServer::handleSetNumRepeatingColorsRequested(const String& json
 {
 	updateAnimationMode(AnimationMode::RepeatingColors);
 
-	repeatingColorsToUse = jsonData.toInt();
+	repeatingColorsToUse = clamp((int)jsonData.toInt(), 1, NUM_REPEATING_COLORS);
 	repeatingPalette.updateColors(repeatingColors, repeatingColorsToUse);
 }
 
@@ -506,4 +536,10 @@ void AnimationWebServer::handleSetBrightnessRequested(const String& jsonData)
 {
 	int brightness = jsonData.toInt();
 	setStrandBrightness(brightness);
+}
+
+void AnimationWebServer::handleSetSpeedFactor(const String& jsonData) 
+{
+	int parsedSpeedFactor = jsonData.toInt();
+	speedFactor = clamp(parsedSpeedFactor, MIN_SPEED_FACTOR, MAX_SPEED_FACTOR);
 }

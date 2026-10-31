@@ -40,7 +40,7 @@ function syncWrappingDivColor(embeddedColorPicker)
 	embeddedColorPicker.parentElement.style.backgroundColor = embeddedColorPicker.value;
 }
 
-function createControlsFromControllerState(manualLedControlsDiv, repeatingColorControlsDiv, animationModeSelector)
+function createControlsFromControllerState(manualLedControlsDiv, repeatingColorControlsDiv, animationModeSelector, settingsTable)
 {
 	fetch('/ledControllerState.json')
 	.then(response => 
@@ -54,6 +54,7 @@ function createControlsFromControllerState(manualLedControlsDiv, repeatingColorC
 	{
 		createManualLedControls(manualLedControlsDiv, ledControllerState);
 		createRepeatingLedControls(repeatingColorControlsDiv, ledControllerState);
+		createRandomSettingsControls(settingsTable, ledControllerState);
 
 		fetch('/enumerations.json')
 		.then(response => 
@@ -216,16 +217,30 @@ function createRepeatingLedControls(div, ledControllerState)
 	numColorsSlider.oninput = getRateLimitedCallback(() => setNumRepeatingColors(numColorsSlider.value), STANDARD_DELAY_MS);
 	numColorsSlider.id = "repeatingColorSlider";
 
-	// Create brightness slider
-	row = document.createElement("tr");
-	table.appendChild(row);
-
 	sliderTableItem = document.createElement("td");
 	row.appendChild(sliderTableItem);
 	sliderTableItem.colSpan = 5;
+}
+
+function createRandomSettingsControls(table, ledControllerState)
+{
+	// Create brightness slider
+	const brightnessRow = document.createElement("tr");
+	table.appendChild(brightnessRow);
+
+	var labelItem = document.createElement("td");
+	brightnessRow.appendChild(labelItem);
+
+	var label = document.createElement("p");
+	labelItem.appendChild(label);
+	label.innerHTML = "Brightness";
+	
+	var sliderItem = document.createElement("td");
+	brightnessRow.appendChild(sliderItem);
 
 	const brightnessSlider = document.createElement("input");
-	sliderTableItem.appendChild(brightnessSlider);
+	sliderItem.appendChild(brightnessSlider);
+	
 	brightnessSlider.type = "range";
 	brightnessSlider.min = "0";
 	brightnessSlider.max = "255";
@@ -237,6 +252,35 @@ function createRepeatingLedControls(div, ledControllerState)
 	brightnessSlider.appearance = "slider-vertical";
 	brightnessSlider.oninput = getRateLimitedCallback(() => setBrightness(brightnessSlider.value), LONG_OPERATION_DELAY_MS);
 	brightnessSlider.id = "brightnessSlider";
+
+
+	// Create speed slider
+	const speedRow = document.createElement("tr");
+	table.appendChild(speedRow);
+
+	labelItem = document.createElement("td");
+	speedRow.appendChild(labelItem);
+
+	label = document.createElement("p");
+	labelItem.appendChild(label);
+	label.innerHTML = "Speed";
+	
+	sliderItem = document.createElement("td");
+	speedRow.appendChild(sliderItem);
+
+	const speedFactorSlider = document.createElement("input");
+	sliderItem.appendChild(speedFactorSlider);
+	speedFactorSlider.type = "range";
+	speedFactorSlider.min = "1";
+	speedFactorSlider.max = "1000";
+	speedFactorSlider.value = ledControllerState.brightness; 
+	speedFactorSlider.class = "slider";
+	speedFactorSlider.margin = "2 2 10 2";
+	speedFactorSlider.writingMode = "vertical-lr";
+	speedFactorSlider.direction = "rtl";
+	speedFactorSlider.appearance = "slider-vertical";
+	speedFactorSlider.oninput = getRateLimitedCallback(() => setSpeedFactor(speedFactorSlider.value), LONG_OPERATION_DELAY_MS);
+	speedFactorSlider.id = "speedFactorSlider";
 }
 
 function updateAnimationModeSelector(currentMode, modesJson, selector)
@@ -296,6 +340,11 @@ function setAllLedsColor(color)
 function setBrightness(brightness) 
 {
 	sendCommand("SetBrightness", `${brightness}`);
+}
+
+function setSpeedFactor(speedFactor) 
+{
+	sendCommand("SetSpeedFactor", `${speedFactor}`);
 }
 
 function hexToRgb(hex) {

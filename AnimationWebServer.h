@@ -28,7 +28,10 @@ public:
 
 	// Delays the animation, while also waiting for interupts. Returns true if the current animation should be cancelled and returned from
 	static bool delayUnlessInterrupted(unsigned int delayMillieseconds);
+	static bool pollForInterrupt();
 	static bool shouldCurrentAnimationContinue();
+	static int getSpeedFactor();
+	static long adjustCycleTime(long animationTime);
 
 	static ColorIterator& getColorIterator();
 
@@ -62,4 +65,6 @@ private:
 	static void handleSetRepeatingLedColor(const String& jsonData);
 	static void handleSetNumRepeatingColorsRequested(const String& jsonData);
 	static void handleSetBrightnessRequested(const String& jsonData);
+	static void handleSetSpeedFactor(const String& jsonData);
+
 };
