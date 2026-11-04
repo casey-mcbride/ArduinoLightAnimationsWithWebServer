@@ -27,11 +27,12 @@ public:
 	static void startAnimationLoop();
 
 	// Delays the animation, while also waiting for interupts. Returns true if the current animation should be cancelled and returned from
-	static bool delayUnlessInterrupted(unsigned int delayMillieseconds);
+	static void delayUnlessInterrupted();
 	static bool pollForInterrupt();
 	static bool shouldCurrentAnimationContinue();
 	static int getSpeedFactor();
-	static long adjustCycleTime(long animationTime);
+	static long getCycleTicks();
+	static void markAnimationStart();
 
 	static ColorIterator& getColorIterator();
 

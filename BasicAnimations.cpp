@@ -6,7 +6,7 @@
 #include "AnimationWebServer.h"
 
 #define WHILE_ANIMATION_LOOP ;\
-	long startOfAnimation = millis();\
+	AnimationWebServer::markAnimationStart();\
 	while(AnimationWebServer::shouldCurrentAnimationContinue())
 
 #define DELAY_OR_RETURN(delayMS)\
@@ -30,12 +30,12 @@ void colorMarch(const int bandSize)
 	
 	WHILE_ANIMATION_LOOP
 	{
-		long elapsed = millis() - startOfAnimation;
 		ColorPalette* palette = iterator.getPalette();
 		int numColors = palette->getNumColors();
-
 		int ledCycleSize = bandSize * numColors;
-		int cycleOffset = AnimationWebServer::adjustCycleTime(elapsed) % ledCycleSize;
+
+		long cycleTicks = AnimationWebServer::getCycleTicks();
+		int cycleOffset = cycleTicks % ledCycleSize;
 		for(int i = 0; i < NUM_STRAND_LEDS; i++)
 		{
 			Color c = palette->getColor(((i + cycleOffset) / bandSize) % numColors);

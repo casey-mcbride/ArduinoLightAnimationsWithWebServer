@@ -36,17 +36,13 @@
 static UnoR4WiFi_WebServer server;
 static const int serverPort = 80;
 static bool animationSwitch = false;
-// static ArduinoLEDMatrix matrix;
-// static const int ledMatrixWidth = 12;
-// static const int ledMatrixHeight = 8;
-// static bool leds[ledMatrixWidth * ledMatrixHeight];
 
 static ulong startOfCurrentAnimation;
-// static const Color plainStrandColor;
 static AnimationMode currentMode;
 static int currentAnimationIndex;
 
 static int speedFactor = 500;
+static byte lightBrightness;
 
 static bool serverStarted = false;
 static bool serverFailed = false;
@@ -65,7 +61,6 @@ Color repeatingColors[NUM_REPEATING_COLORS];
 static int repeatingColorsToUse = 2;
 static ColorPalette repeatingPalette(repeatingColors, repeatingColorsToUse);
 
-static byte lightBrightness;
 
 void refreshStrandFromBulbInfo()
 {
@@ -209,14 +204,13 @@ void AnimationWebServer::startAnimationLoop()
 		if(!serverFailed)
 			server.handleClient();
 		animationSwitch = false;
-		startOfCurrentAnimation = millis();
 
 		switch(currentMode)
 		{
 			case AnimationMode::Manual:
 				refreshStrandFromBulbInfo();
 				debugMessage("Doing manual animation");
-				delayUnlessInterrupted(100000);
+				delayUnlessInterrupted();
 			break;
 			case AnimationMode::RepeatingColors:
 				debugMessage("Doing repeating colors animation");
@@ -253,25 +247,18 @@ bool AnimationWebServer::pollForInterrupt()
 	return false;
 }
 
-bool AnimationWebServer::delayUnlessInterrupted(unsigned int delayMillieseconds)
+void AnimationWebServer::delayUnlessInterrupted()
 {
-	ulong startTime = millis();
-	while(millis() - startTime < delayMillieseconds)
+	while(shouldCurrentAnimationContinue() && !pollForInterrupt())
 	{
-		if(!serverFailed)
-			server.handleClient();
-		if(animationSwitch)
-			return true;
 	}
-
-	return false;
 }
 
 bool AnimationWebServer::shouldCurrentAnimationContinue()
 {
 	if(animationSwitch)
 		return false;
-	return /*currentMode == AnimationMode::HoldAnimation ||*/ millis() - startOfCurrentAnimation < animationMilliSeconds;
+	return currentMode != AnimationMode::RandomAnimation || millis() - startOfCurrentAnimation < animationMilliSeconds;
 }
 
 void AnimationWebServer::setStrandBrightness(int brightness)
@@ -450,9 +437,15 @@ int AnimationWebServer::getSpeedFactor()
 	return speedFactor;
 }
 
-long AnimationWebServer::adjustCycleTime(long animationTime)
+long AnimationWebServer::getCycleTicks()
 {
-	return animationTime / speedFactor;
+	long elapsed = millis() - startOfCurrentAnimation;
+	return elapsed / speedFactor;
+}
+
+void AnimationWebServer::markAnimationStart()
+{
+	startOfCurrentAnimation = millis();
 }
 
 void AnimationWebServer::handleSetManualColorRequested(const String& jsonData) 
